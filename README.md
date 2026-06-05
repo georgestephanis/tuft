@@ -12,7 +12,11 @@ Visual design feedback for WordPress. A floating button lets anyone on the front
 
 - **Click-to-annotate** — click the "Feedback" button, then click any element on the page. The plugin captures the DOM selector, viewport coordinates, viewport dimensions, and form field state automatically.
 - **In-browser screenshots** — uses [html2canvas](https://html2canvas.hertzen.com/) (bundled locally, no CDN dependency) to capture the visible viewport at submission time.
-- **Feedback modal** — collects the visitor's feedback text. Features an annotated screenshot preview that dynamically centers its crop focal point around your click coordinates (via CSS `object-position`), ensuring the target element is never cropped out of view. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
+- **Freehand canvas annotation** — after the screenshot is captured, a drawing toolbar appears below the preview. Reviewers can draw freehand strokes or rectangles, undo the last stroke, or clear all marks. All annotations are baked into the submitted JPEG on the client; no server-side overlay is applied.
+- **Feedback modal** — collects the visitor's feedback text alongside the annotated screenshot. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
+- **Widget visibility controls** — choose who sees the feedback button: everyone (including logged-out visitors), logged-in users only, editors and above, or administrators only. Configured under **Settings → Tuft Feedback**.
+- **Submission rate limiting** — cap the number of submissions per IP address per hour to protect against spam. Tracked via post meta queries. Set to 0 to disable.
+- **Built-in notifications** — email one or more addresses and/or POST a JSON payload to any number of webhook URLs on every submission. Compatible with Slack incoming webhooks, Discord, Teams, Zapier, Make, and any HTTP endpoint that accepts a JSON POST.
 - **Local storage** — submissions stored as a `tuft_feedback` custom post type with full metadata and a screenshot attachment.
 - **Alpaca Issue Tracker integration** — when [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, every submission is automatically mirrored as a Kanban issue on the Alpaca board.
 
@@ -41,22 +45,51 @@ Frontend page
        │
        ▼
   Feedback modal
-  • Screenshot thumbnail
+  • Annotated screenshot canvas with drawing toolbar (pen, rect, undo, clear)
   • Name / email fields (guests only — hidden for logged-in users)
   • Feedback textarea (required)
   • Submit / Cancel
        │
        ▼ submit
   POST /wp-json/tuft/v1/submit
+  (rate limit checked against _tuft_submitter_ip post meta)
        │
        ▼
   tuft_feedback CPT post created
   Screenshot saved as media attachment
   tuft_feedback_submitted action fires
        │
-       ▼ (if Alpaca active)
-  alpaca_issue created, assigned to default board column
+       ├─ (if email configured) wp_mail() to each address
+       ├─ (if webhooks configured) wp_remote_post() to each URL
+       └─ (if Alpaca active) alpaca_issue created, assigned to default board column
 ```
+
+---
+
+## Settings
+
+Configure the plugin under **Settings → Tuft Feedback**.
+
+### Widget visibility
+
+| Option | Who sees the button |
+|--------|---------------------|
+| Everyone | All visitors, logged in or not |
+| Logged-in users only | Any authenticated WordPress user (default) |
+| Editors and above | Users with `edit_others_posts` capability |
+| Administrators only | Users with `manage_options` capability |
+
+The editors and administrators options show approximate user counts (standard WordPress roles only; custom roles with equivalent capabilities are not included in the count).
+
+### Rate limiting
+
+Maximum submissions per IP address per hour. Set to 0 to disable. Default is 5. Tracked via `WP_Query` against the `_tuft_submitter_ip` post meta key — no transients are used.
+
+### Notifications
+
+**Email** — a comma-separated list of addresses. A plain-text email is sent to each address on every submission with the feedback text, page URL, element selector, submitter info, and a link to the admin detail view.
+
+**Webhook URLs** — a newline-separated list of URLs. A JSON payload is POSTed to each URL on every submission (fire-and-forget, `blocking: false`). The payload is compatible with Slack incoming webhooks (uses the `text` field), Discord, Teams, Zapier, Make, and any custom HTTP endpoint. Expand the "JSON payload" summary on the settings page to see the full payload schema.
 
 ---
 
@@ -64,7 +97,7 @@ Frontend page
 
 ### Without Alpaca
 
-Submissions appear under **Tuft** in the admin menu. The list table shows:
+Submissions appear under **Tuft Feedback** in the admin menu. The list table shows:
 
 | Column | Contents |
 |--------|---------|
@@ -75,13 +108,13 @@ Submissions appear under **Tuft** in the admin menu. The list table shows:
 | Screenshot | Thumbnail |
 | Date | Submission date |
 
-Clicking a row opens the **detail view**: full feedback text, all metadata, and the full-size screenshot.
+Clicking a row opens the **detail view**: full feedback text, all metadata, and the full-size annotated screenshot.
 
 ### With Alpaca Issue Tracker installed
 
-The "Tuft" menu item moves under **Project Board** (Alpaca's menu). The Alpaca board becomes the primary review and triage UI — issues are tagged `Tuft` and `Browser: Chrome` (or whichever browser was detected) so they can be filtered.
+The "Tuft Feedback" menu item moves under **Project Board** (Alpaca's menu). The Alpaca board becomes the primary review and triage UI — issues are tagged `Tuft` and `Browser: Chrome` (or whichever browser was detected) so they can be filtered.
 
-For visual details (screenshot, selector, click coordinates, form state) that the Alpaca board does not display, click **Tuft** in the Project Board submenu to reach the list table, then click any row to open the full detail view.
+For visual details (screenshot, selector, click coordinates, form state) that the Alpaca board does not display, click **Tuft Feedback** in the Project Board submenu to reach the list table, then click any row to open the full detail view.
 
 ---
 
@@ -96,7 +129,7 @@ When both plugins are active:
 - The issue is placed at the top of the lowest-score column (your "inbox" column).
 - The issue is tagged with the submitter's browser and type `Tuft`.
 - Both posts are cross-referenced: the `tuft_feedback` post stores the Alpaca issue ID, and the Alpaca issue stores the `tuft_feedback` post ID.
-- The "Tuft" admin menu entry moves under Project Board.
+- The "Tuft Feedback" admin menu entry moves under Project Board.
 
 Removing Alpaca does not affect stored `tuft_feedback` posts. The cross-reference meta keys (`_tuft_alpaca_issue_id`, `alpaca_tuft_post_id`) become inert but are otherwise harmless.
 
@@ -108,7 +141,7 @@ Removing Alpaca does not affect stored `tuft_feedback` posts. The cross-referenc
 
 ### `POST /submit`
 
-Open to all visitors (no authentication required). Intended for local/staging use — add capability checks before exposing on a public production site.
+Open to all visitors (no authentication required). The widget visibility setting controls whether the frontend assets are enqueued at all — the endpoint itself remains open for direct API use.
 
 **Body (JSON):**
 
@@ -134,17 +167,21 @@ Open to all visitors (no authentication required). Intended for local/staging us
 }
 ```
 
-`name` and `email` are populated automatically from the submitter's WordPress account when they are logged in — the modal does not display those fields in that case.
+`name` and `email` are populated automatically from the submitter's WordPress account when they are logged in.
 
-**Response:**
+**Responses:**
 
-```json
-{ "success": true, "id": 42 }
-```
+| Status | Meaning |
+|--------|---------|
+| 201 | `{ "success": true, "id": 42 }` |
+| 429 | Rate limit exceeded: `{ "success": false, "message": "Too many submissions…" }` |
+| 500 | Server error |
 
 ---
 
 ## Extension hook
+
+The `tuft_feedback_submitted` action fires after every submission is fully saved. Use it for custom integrations — or rely on the built-in email and webhook notifications configured under **Settings → Tuft Feedback**.
 
 ```php
 add_action( 'tuft_feedback_submitted', function ( int $post_id ) {
@@ -152,7 +189,7 @@ add_action( 'tuft_feedback_submitted', function ( int $post_id ) {
     // All meta is already saved; the screenshot attachment (if any) is attached.
     $feedback = get_post_meta( $post_id, '_tuft_feedback_text', true );
     $page_url = get_post_meta( $post_id, '_tuft_page_url', true );
-    // ... send a Slack notification, create a GitHub issue, etc.
+    // ... create a GitHub issue, update a project tracker, etc.
 } );
 ```
 
@@ -171,7 +208,8 @@ add_action( 'tuft_feedback_submitted', function ( int $post_id ) {
 1. Place the plugin in `wp-content/plugins/tuft/`.
 2. Activate **Tuft**.
 3. Visit any frontend page — the Tuft FAB button appears ~2/3 down the right edge of the screen.
-4. Optionally install and activate **Alpaca Issue Tracker** for board-based triage.
+4. Configure visibility, rate limiting, and notifications under **Settings → Tuft Feedback**.
+5. Optionally install and activate **Alpaca Issue Tracker** for board-based triage.
 
 ---
 
@@ -195,7 +233,7 @@ The Tuft brand kit lives in two places within the plugin:
 
 ## Security notes
 
-The `/submit` REST endpoint uses `__return_true` as its permission callback, making it open to unauthenticated requests. This is intentional for local and staging environments where anonymous client feedback is the goal. Before deploying to a publicly accessible production site, add a capability check:
+The `/submit` REST endpoint uses `__return_true` as its permission callback, making it open to unauthenticated requests. For typical client-review workflows this is intentional. The widget visibility setting under **Settings → Tuft Feedback** controls who sees the feedback button on the frontend, which is sufficient for most use cases. To harden the endpoint itself, add a capability check in `includes/class-tuft-rest-controller.php`:
 
 ```php
 // Example: restrict to logged-in contributors and above
@@ -220,12 +258,14 @@ To resolve this, the demo setup script ([.github/setup.php](.github/setup.php)) 
 
 ## Main files
 
-- [tuft.php](tuft.php) — bootstrap, script enqueues, `tuftSettings` localization
+- [tuft.php](tuft.php) — bootstrap, enqueue guard (visibility check), script enqueues, `tuftSettings` localization
 - [includes/class-tuft-post-type.php](includes/class-tuft-post-type.php) — CPT registration, admin columns, detail meta box, Alpaca menu placement, install-Alpaca notice
-- [includes/class-tuft-rest-controller.php](includes/class-tuft-rest-controller.php) — `POST /submit` endpoint, screenshot attachment saving
+- [includes/class-tuft-settings.php](includes/class-tuft-settings.php) — **Settings → Tuft Feedback** page: visibility, rate limit, email addresses, webhook URLs
+- [includes/class-tuft-rest-controller.php](includes/class-tuft-rest-controller.php) — `POST /submit` endpoint, rate limiting, screenshot attachment saving
+- [includes/class-tuft-notifications.php](includes/class-tuft-notifications.php) — email and webhook dispatch on `tuft_feedback_submitted`
 - [includes/class-tuft-alpaca-bridge.php](includes/class-tuft-alpaca-bridge.php) — Alpaca Issue Tracker integration
-- [assets/css/feedback.css](assets/css/feedback.css) — floating button, targeting overlay, element highlight, modal
-- [assets/js/feedback.js](assets/js/feedback.js) — targeting mode, screenshot capture, modal, REST submission
+- [assets/css/feedback.css](assets/css/feedback.css) — floating button, targeting overlay, element highlight, modal, drawing toolbar
+- [assets/js/feedback.js](assets/js/feedback.js) — targeting mode, screenshot capture, canvas annotation, modal, REST submission
 
 ## Development
 

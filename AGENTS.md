@@ -12,7 +12,13 @@ Guidance for AI agents and contributors working in this plugin.
 
 ## What this plugin does
 
-`tuft` is a standalone visual feedback tool. A floating "Feedback" button appears on every frontend page. Clicking it enters a targeting mode where the visitor can click any element on the page; the plugin captures the DOM selector, click coordinates, viewport size, form field state, and an optional screenshot, then presents a modal for the visitor to type their feedback. On submission everything is stored locally as a `tuft_feedback` custom post type.
+`tuft` is a standalone visual feedback tool. A floating "Feedback" button appears on every frontend page. Clicking it enters a targeting mode where the visitor can click any element on the page; the plugin captures the DOM selector, click coordinates, viewport size, form field state, and a screenshot, then presents a feedback modal. The modal includes an interactive drawing canvas (pen, rectangle, undo, clear) so the reviewer can mark up the screenshot before submitting. On submission everything is stored locally as a `tuft_feedback` custom post type.
+
+**Widget visibility** is controlled by a settings option (`tuft_visibility`). The enqueue function in `tuft.php` checks this option and returns early if the current user does not meet the threshold — so the FAB, CSS, and JS are never sent to ineligible visitors.
+
+**Rate limiting** caps submissions per IP per hour. The submitter IP is stored in `_tuft_submitter_ip` post meta and looked up via `WP_Query` on each submission.
+
+**Notifications** are dispatched by `Tuft_Notifications` on the `tuft_feedback_submitted` action: plain-text email to each address in `tuft_notify_email`, and a JSON POST to each URL in `tuft_webhook_urls`.
 
 If the **Alpaca Issue Tracker** plugin is also active, each submission is automatically mirrored as an `alpaca_issue` so it appears on the Alpaca Kanban board for triage. The two posts are cross-referenced via post meta.
 
@@ -22,12 +28,14 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 | File | Purpose |
 |------|---------|
-| `tuft.php` | Plugin bootstrap: constants, enqueues frontend CSS/JS, passes `tuftSettings` to JS |
+| `tuft.php` | Plugin bootstrap: constants, visibility-gated enqueue of frontend CSS/JS, passes `tuftSettings` to JS |
 | `includes/class-tuft-post-type.php` | `tuft_feedback` CPT, admin list-table columns, meta box detail view, Alpaca-aware menu placement, install-Alpaca notice |
-| `includes/class-tuft-rest-controller.php` | `POST /tuft/v1/submit` — validates, stores the CPT post + meta + screenshot attachment, fires `tuft_feedback_submitted` |
+| `includes/class-tuft-settings.php` | **Settings → Tuft Feedback** page: `tuft_visibility`, `tuft_rate_limit`, `tuft_notify_email`, `tuft_webhook_urls` options |
+| `includes/class-tuft-rest-controller.php` | `POST /tuft/v1/submit` — rate-limit check, CPT post + meta + screenshot attachment, fires `tuft_feedback_submitted` |
+| `includes/class-tuft-notifications.php` | Listens to `tuft_feedback_submitted`; sends email and webhook notifications |
 | `includes/class-tuft-alpaca-bridge.php` | Listens to `tuft_feedback_submitted`; creates an `alpaca_issue` mirror when Alpaca is active |
-| `assets/css/feedback.css` | All frontend UI styles: floating button, targeting overlay, element highlight, modal |
-| `assets/js/feedback.js` | All frontend interaction: targeting mode, element capture, screenshot, modal, REST submission |
+| `assets/css/feedback.css` | All frontend UI styles: floating button, targeting overlay, element highlight, modal, drawing toolbar |
+| `assets/js/feedback.js` | All frontend interaction: targeting mode, element capture, screenshot, canvas annotation, modal, REST submission |
 
 ### Tooling
 
@@ -83,6 +91,24 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 - `canvas#tuft-screenshot-canvas` has `touch-action: none` so pointer events during drawing don't trigger scroll on touch devices. Its CSS sets `width: 100%`; its pixel dimensions (`canvas.width` / `canvas.height`) are set by JS to match `canvas.offsetWidth` × proportional height — so canvas coordinates equal CSS coordinates and no scaling is needed for pointer events.
 - `drawing.baseSnapshot` (ImageData) is captured after the spotlight annotation is painted. `redrawCanvas()` calls `ctx.putImageData(baseSnapshot)` then replays all committed strokes, so Undo is O(n strokes) regardless of drawing complexity.
 - `submit()` exports `drawCanvas.toDataURL('image/jpeg', 0.85)` when `drawing.baseSnapshot` is set — this includes both the spotlight annotation and any reviewer drawings. It falls back to the raw `data.screenshot` string only when html2canvas was unavailable and the canvas was never initialised.
+- `teardownDrawCanvas()` removes all pointer event listeners; it is called from `closeModal()` so listeners are never leaked between sessions.
+
+---
+
+## Settings (`Tuft_Settings`)
+
+Registered under **Settings → Tuft Feedback** (`options-general.php?page=tuft-settings`).
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `tuft_visibility` | string | `logged_in` | Who sees the widget: `everyone`, `logged_in`, `editors`, `admins` |
+| `tuft_rate_limit` | int | `5` | Max submissions per IP per hour; `0` disables rate limiting |
+| `tuft_notify_email` | string | `''` | Comma-separated email addresses for submission notifications |
+| `tuft_webhook_urls` | string | `''` | Newline-separated webhook URLs; a JSON payload is POSTed to each on submission |
+
+`Tuft_Settings::get_visibility()` is a `public static` method used by `tuft.php` during enqueue.
+
+`sanitize_visibility()` falls back to `'logged_in'` for unknown values. `sanitize_webhook_urls()` runs each line through `esc_url_raw()` and drops blank or invalid entries. `sanitize_email_list()` runs each comma-delimited part through `sanitize_email()` and drops invalid addresses.
 
 ---
 
@@ -114,9 +140,9 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 | `userAgent` | string | No | `navigator.userAgent` |
 | `name` | string | No | Submitter name — shown in modal for guests; auto-populated from WP session for logged-in users |
 | `email` | string | No | Submitter email — same behaviour as `name` |
-| `screenshot` | string | No | Base64 JPEG data URL; saved as a media attachment |
+| `screenshot` | string | No | Base64 JPEG data URL (includes spotlight annotation and any canvas drawings); saved as a media attachment |
 
-**Response:** `{ "success": true, "id": <post_id> }` on 201, or a WP error on 4xx/5xx.
+**Responses:** `{ "success": true, "id": <post_id> }` on 201; `{ "success": false, "message": "…" }` with status 429 when the rate limit is exceeded; WP error on 5xx.
 
 ---
 
@@ -138,8 +164,42 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 | `_tuft_submitter_name` | Name — entered by guest, or sourced from WP user for logged-in submitters |
 | `_tuft_submitter_email` | Email — same sourcing as `_tuft_submitter_name` |
 | `_tuft_user_agent` | Browser user-agent string |
+| `_tuft_submitter_ip` | Submitter IP address (used for rate limiting) |
 | `_tuft_screenshot_id` | Attachment ID of the JPEG screenshot |
 | `_tuft_alpaca_issue_id` | ID of the mirrored `alpaca_issue` (set by bridge) |
+
+---
+
+## Notifications (`Tuft_Notifications`)
+
+Hooked to `tuft_feedback_submitted`. Reads `tuft_notify_email` and `tuft_webhook_urls` from options on each invocation (no caching).
+
+### Email
+
+`wp_mail()` is called once with all configured addresses as recipients. Subject: `[Tuft] New feedback on "{page title}"`. Body: plain-text with feedback text, page URL, element selector, submitter name/email, and admin edit link.
+
+### Webhook payload
+
+`wp_remote_post()` is called for each URL with `blocking: false` (fire-and-forget). Content-Type is `application/json`. `WP_Error` results are logged via `error_log()` only — failures never surface to the submitter. Each URL is validated with `filter_var( FILTER_VALIDATE_URL )` before the request is sent.
+
+Payload shape:
+
+```json
+{
+  "text":            "New feedback from Jane on \"About Us\": …",
+  "id":              42,
+  "feedback":        "…",
+  "page_url":        "https://example.com/about/",
+  "page_title":      "About Us",
+  "selector":        ".hero .cta-button",
+  "submitter_name":  "Jane",
+  "submitter_email": "jane@example.com",
+  "admin_url":       "https://example.com/wp-admin/post.php?post=42&action=edit",
+  "submitted_at":    "2026-06-05T12:00:00+00:00"
+}
+```
+
+The `text` field is a human-readable summary compatible with Slack incoming webhooks, Discord, and Teams. All other fields are available for Zapier/Make field mapping or custom endpoint parsing.
 
 ---
 
@@ -161,8 +221,8 @@ When Alpaca is active, on every `tuft_feedback_submitted` action:
 ### Admin menu behaviour
 
 When Alpaca is active, `Tuft_Post_Type::adjust_menu()` (hooked to `admin_menu` at priority 20):
-- Removes the standalone "Tuft" top-level menu entry.
-- Adds "Tuft" as a submenu under Alpaca's **Project Board** (`project-board`).
+- Removes the standalone "Tuft Feedback" top-level menu entry.
+- Adds "Tuft Feedback" as a submenu under Alpaca's **Project Board** (`project-board`).
 
 The standard CPT list table and post-edit screen (the expanded detail view with screenshot) remain fully functional at their existing URLs.
 
@@ -186,7 +246,7 @@ To resolve this, the Playground blueprint setup script ([.github/setup.php](.git
 |------|------|------|
 | `tuft_feedback_submitted` | After a `tuft_feedback` post and all its meta (including screenshot attachment) are fully saved | `$post_id` (int) |
 
-Use this hook to integrate with other systems without modifying the REST controller.
+Use this hook to integrate with other systems without modifying the REST controller. Built-in email and webhook notifications are also dispatched via this hook by `Tuft_Notifications`.
 
 ---
 
@@ -197,7 +257,7 @@ Use this hook to integrate with other systems without modifying the REST control
 - **Run linters before declaring any PHP/JS/CSS change done:**
   - PHP: `composer phpcs` (auto-fix with `composer phpcbf`)
   - JS + CSS: `npm run lint` (or individually `npm run lint:js` / `npm run lint:css`)
-- The `/submit` endpoint uses `permission_callback => '__return_true'` intentionally — this plugin is for local/staging use. Add `current_user_can()` checks before deploying to production.
+- The `/submit` endpoint uses `permission_callback => '__return_true'` intentionally — visibility gating happens at the enqueue level in `tuft.php`. Add `current_user_can()` checks to the REST controller only if the endpoint itself needs to be locked down.
 - The Alpaca bridge must never hard-depend on Alpaca functions: always guard with `function_exists()` or `post_type_exists()` before calling.
 - Do not modify `alpaca-issue-tracker` files; interact with it only through its public functions, filters, and the `alpaca_default_status` / `alpaca_user_can` filter hooks.
 - `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — do not reintroduce a CDN dependency. To upgrade: bump the version in `package.json` and run `npm install` (the `postinstall` hook copies the new file). Test that the `ignoreElements` option (used to exclude elements whose `id` starts with `tuft-` from screenshots) still works after any upgrade.
