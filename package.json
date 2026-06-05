@@ -1,5 +1,5 @@
 {
-  "name": "tuft",
+  "name": "tuft-feedback",
   "version": "1.1.0",
   "description": "Visual design feedback with click-to-annotate and screenshots.",
   "private": true,
@@ -8,8 +8,18 @@
     "postinstall": "npm run copy-vendor",
     "lint:js": "wp-scripts lint-js assets/js",
     "lint:css": "wp-scripts lint-style assets/css",
-    "lint": "npm run lint:js && npm run lint:css"
+    "lint": "npm run lint:js && npm run lint:css",
+    "plugin-zip": "wp-scripts plugin-zip"
   },
+  "files": [
+    "tuft-feedback.php",
+    "readme.txt",
+    "assets/css/feedback.css",
+    "assets/img/fab-button.png",
+    "assets/js/feedback.js",
+    "assets/js/vendor/html2canvas.min.js",
+    "includes/"
+  ],
   "devDependencies": {
     "@wordpress/scripts": "^30.0.0",
     "html2canvas": "^1.4.1"
