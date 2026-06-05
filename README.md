@@ -92,7 +92,7 @@ Install [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracke
 When both plugins are active:
 
 - Each submission automatically creates a matching `alpaca_issue`.
-- The issue body contains the feedback text. A first `issuecomment` holds the full context: feedback text, metadata (page, element, coordinates, viewport, submitter), and an SVG-annotated screenshot with spotlight and crosshair marker.
+- The issue body contains the feedback text. A first `issuecomment` holds the full context: feedback text, metadata (page, element, coordinates, viewport, submitter), and the annotated screenshot. The spotlight, bounding box, crosshair, and any reviewer drawings are baked into the JPEG on the client — no server-side overlay is added.
 - The issue is placed at the top of the lowest-score column (your "inbox" column).
 - The issue is tagged with the submitter's browser and type `Tuft`.
 - Both posts are cross-referenced: the `tuft_feedback` post stores the Alpaca issue ID, and the Alpaca issue stores the `tuft_feedback` post ID.

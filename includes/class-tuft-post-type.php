@@ -330,20 +330,10 @@ class Tuft_Post_Type {
 		<?php if ( $shot_id ) : ?>
 			<h3 style="margin-top:20px;"><?php esc_html_e( 'Screenshot', 'tuft' ); ?></h3>
 			<?php
-			$shot_url   = wp_get_attachment_url( $shot_id );
-			$has_coords = ( '' !== $x && '' !== $y );
-			if ( $has_coords ) {
-				$svg = Tuft_SVG_Annotation::build( $shot_id, (float) $x, (float) $y, $post->ID, $rect );
-				if ( $svg ) {
-					echo '<a href="' . esc_url( $shot_url ) . '" target="_blank" style="display:block;">';
-					echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built entirely from trusted meta + esc_url/esc_attr calls within the method.
-					echo '</a>';
-				}
-			} else {
-				echo '<a href="' . esc_url( $shot_url ) . '" target="_blank">';
-				echo wp_get_attachment_image( $shot_id, 'large', false, array( 'style' => 'max-width:100%;border:1px solid #ddd;border-radius:3px;' ) );
-				echo '</a>';
-			}
+			$shot_url = wp_get_attachment_url( $shot_id );
+			echo '<a href="' . esc_url( $shot_url ) . '" target="_blank">';
+			echo wp_get_attachment_image( $shot_id, 'large', false, array( 'style' => 'max-width:100%;border:1px solid #ddd;border-radius:3px;' ) );
+			echo '</a>';
 			?>
 		<?php endif; ?>
 		<?php

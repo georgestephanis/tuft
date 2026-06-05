@@ -154,11 +154,26 @@
 		highlight: null,
 		backdrop: null,
 		modal: null,
+		drawCanvas: null,
+
+		// Drawing state — reset each time the modal opens.
+		drawing: {
+			active: false,
+			tool: 'pen',       // 'pen' | 'rect'
+			strokes: [],       // committed strokes
+			penPoints: [],     // points for the stroke currently being drawn
+			baseSnapshot: null, // ImageData after spotlight annotation, before user marks
+			startX: 0,
+			startY: 0,
+		},
 
 		// Bound event handlers (stored for removeEventListener)
 		_onClick: null,
 		_onHover: null,
 		_onKeyDown: null,
+		_onDrawStart: null,
+		_onDrawMove: null,
+		_onDrawEnd: null,
 
 		init() {
 			this._onClick = this.onTargetClick.bind( this );
@@ -248,7 +263,22 @@
 				'      <p>Your feedback has been saved for review.</p>',
 				'    </div>',
 				'    <div id="tuft-form-wrap">',
-				'      <img id="tuft-screenshot-preview" alt="Screenshot" />',
+				'      <canvas id="tuft-screenshot-canvas" aria-label="Annotated screenshot — draw on it to mark up areas"></canvas>',
+				'      <div id="tuft-draw-toolbar" role="toolbar" aria-label="Drawing tools">',
+				'        <button class="tuft-draw-tool tuft-draw-active" data-tool="pen" title="Pen (freehand)" aria-pressed="true">',
+				'          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+				'        </button>',
+				'        <button class="tuft-draw-tool" data-tool="rect" title="Rectangle" aria-pressed="false">',
+				'          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>',
+				'        </button>',
+				'        <div class="tuft-draw-sep" aria-hidden="true"></div>',
+				'        <button id="tuft-draw-undo" title="Undo last stroke" aria-label="Undo">',
+				'          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>',
+				'        </button>',
+				'        <button id="tuft-draw-clear" title="Clear all drawings" aria-label="Clear drawings">',
+				'          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>',
+				'        </button>',
+				'      </div>',
 				'      <div id="tuft-element-info"></div>',
 				'      <div id="tuft-error"></div>',
 				'      <div id="tuft-user-fields">',
@@ -294,6 +324,33 @@
 				}.bind( this )
 			);
 
+			// Wire drawing toolbar tool buttons.
+			const toolBtns = backdrop.querySelectorAll( '.tuft-draw-tool' );
+			toolBtns.forEach(
+				function ( btn ) {
+					btn.addEventListener(
+						'click',
+						function () {
+							toolBtns.forEach( function ( b ) {
+								b.classList.remove( 'tuft-draw-active' );
+								b.setAttribute( 'aria-pressed', 'false' );
+							} );
+							btn.classList.add( 'tuft-draw-active' );
+							btn.setAttribute( 'aria-pressed', 'true' );
+							this.drawing.tool = btn.dataset.tool;
+						}.bind( this )
+					);
+				}.bind( this )
+			);
+
+			backdrop
+				.querySelector( '#tuft-draw-undo' )
+				.addEventListener( 'click', this.undoStroke.bind( this ) );
+			backdrop
+				.querySelector( '#tuft-draw-clear' )
+				.addEventListener( 'click', this.clearDrawing.bind( this ) );
+
+			this.drawCanvas = backdrop.querySelector( '#tuft-screenshot-canvas' );
 			this.modal = backdrop;
 			return backdrop;
 		},
@@ -433,17 +490,25 @@
 			submitBtn.disabled = false;
 			submitBtn.textContent = 'Submit Feedback';
 
-			// Screenshot preview — annotated with spotlight and element bounds.
-			const preview = this.backdrop.querySelector(
-				'#tuft-screenshot-preview'
+			// Reset drawing tool buttons to pen.
+			this.backdrop.querySelectorAll( '.tuft-draw-tool' ).forEach(
+				function ( b ) {
+					const isPen = b.dataset.tool === 'pen';
+					b.classList.toggle( 'tuft-draw-active', isPen );
+					b.setAttribute( 'aria-pressed', isPen ? 'true' : 'false' );
+				}
 			);
+			this.drawing.tool = 'pen';
+
+			// Screenshot canvas — set up asynchronously once the screenshot image loads.
+			const canvas = this.drawCanvas;
+			const toolbar = this.backdrop.querySelector( '#tuft-draw-toolbar' );
 			if ( data.screenshot ) {
-				preview.src = data.screenshot;
-				preview.classList.add( 'visible' );
-				this.annotatePreview( preview, data );
+				canvas.classList.add( 'visible' );
+				this.setupDrawCanvas( data );
 			} else {
-				preview.classList.remove( 'visible' );
-				preview.style.objectPosition = '';
+				canvas.classList.remove( 'visible' );
+				toolbar.style.display = 'none';
 			}
 
 			// Element info
@@ -476,6 +541,296 @@
 
 		closeModal() {
 			this.backdrop.classList.remove( 'active' );
+			this.teardownDrawCanvas();
+		},
+
+		// ── Drawing canvas setup / teardown ────────────────────
+
+		/**
+		 * Load the raw screenshot into the draw canvas, paint the spotlight +
+		 * crosshair annotation on top, then save that as the base snapshot so
+		 * user strokes can be undone without re-running html2canvas.
+		 *
+		 * Runs asynchronously because it needs to wait for the image to load.
+		 */
+		setupDrawCanvas( data ) {
+			const canvas = this.drawCanvas;
+			const ctx = canvas.getContext( '2d' );
+			const toolbar = this.backdrop.querySelector( '#tuft-draw-toolbar' );
+
+			// Hide toolbar until the canvas is ready.
+			toolbar.style.display = 'none';
+
+			const img = new Image();
+			img.onload = function () {
+				// Scale screenshot to fill the canvas's CSS display width, preserving
+				// aspect ratio. The canvas's offsetWidth is reliable here because
+				// openModal() has already added the 'visible' class (display:block).
+				const w = canvas.offsetWidth || 440;
+				const h = Math.round( ( img.naturalHeight / img.naturalWidth ) * w );
+				canvas.width = w;
+				canvas.height = h;
+
+				// Draw the raw screenshot scaled to canvas dimensions.
+				ctx.drawImage( img, 0, 0, w, h );
+
+				// Paint spotlight + crosshair annotation.
+				const xPct = parseFloat( data.xPercent );
+				const yPct = parseFloat( data.yPercent );
+
+				if ( ! isNaN( xPct ) && ! isNaN( yPct ) ) {
+					const cx = ( xPct / 100 ) * w;
+					const cy = ( yPct / 100 ) * h;
+					const spotR = Math.min( w, h ) * 0.15;
+
+					// Dark overlay with circular spotlight cutout (even-odd fill).
+					ctx.fillStyle = 'rgba(0,0,0,0.6)';
+					ctx.beginPath();
+					ctx.rect( 0, 0, w, h );
+					ctx.arc( cx, cy, spotR, 0, Math.PI * 2, true );
+					ctx.fill( 'evenodd' );
+
+					// Element bounding box: two-pass dashed rect.
+					const rl = parseFloat( data.rectLeft );
+					const rt = parseFloat( data.rectTop );
+					const rw = parseFloat( data.rectWidth );
+					const rh = parseFloat( data.rectHeight );
+					if ( ! isNaN( rl ) && ! isNaN( rt ) && ! isNaN( rw ) && ! isNaN( rh ) ) {
+						const rx = ( rl / 100 ) * w;
+						const ry = ( rt / 100 ) * h;
+						const rW = ( rw / 100 ) * w;
+						const rH = ( rh / 100 ) * h;
+
+						ctx.setLineDash( [ 8, 4 ] );
+						ctx.lineDashOffset = 0;
+						ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+						ctx.lineWidth = 2.5;
+						ctx.strokeRect( rx, ry, rW, rH );
+
+						ctx.lineDashOffset = 4;
+						ctx.strokeStyle = '#fbbf24';
+						ctx.lineWidth = 1.5;
+						ctx.strokeRect( rx, ry, rW, rH );
+
+						ctx.setLineDash( [] );
+						ctx.lineDashOffset = 0;
+					}
+
+					// Ring: white halo then coral stroke.
+					ctx.beginPath();
+					ctx.arc( cx, cy, 18, 0, Math.PI * 2 );
+					ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+					ctx.lineWidth = 4;
+					ctx.stroke();
+					ctx.strokeStyle = '#ef4444';
+					ctx.lineWidth = 2;
+					ctx.stroke();
+
+					// Crosshair arms — white pass then coral pass.
+					const gap = 22,
+						arm = 14;
+					const arms = [
+						[ cx - gap - arm, cy, cx - gap, cy ],
+						[ cx + gap, cy, cx + gap + arm, cy ],
+						[ cx, cy - gap - arm, cx, cy - gap ],
+						[ cx, cy + gap, cx, cy + gap + arm ],
+					];
+					[
+						[ 'rgba(255,255,255,0.9)', 3 ],
+						[ '#ef4444', 1.5 ],
+					].forEach( function ( pair ) {
+						ctx.strokeStyle = pair[ 0 ];
+						ctx.lineWidth = pair[ 1 ];
+						arms.forEach( function ( arm ) {
+							ctx.beginPath();
+							ctx.moveTo( arm[ 0 ], arm[ 1 ] );
+							ctx.lineTo( arm[ 2 ], arm[ 3 ] );
+							ctx.stroke();
+						} );
+					} );
+
+					// Centre dot.
+					ctx.fillStyle = '#ef4444';
+					ctx.beginPath();
+					ctx.arc( cx, cy, 4, 0, Math.PI * 2 );
+					ctx.fill();
+					ctx.fillStyle = 'white';
+					ctx.beginPath();
+					ctx.arc( cx, cy, 2, 0, Math.PI * 2 );
+					ctx.fill();
+				}
+
+				// Snapshot the fully-annotated base so Undo can restore it.
+				this.drawing.baseSnapshot = ctx.getImageData( 0, 0, w, h );
+				this.drawing.strokes = [];
+				this.drawing.penPoints = [];
+				this.drawing.active = false;
+
+				// Show toolbar and attach drawing event listeners.
+				toolbar.style.display = 'flex';
+				this._onDrawStart = this.startDraw.bind( this );
+				this._onDrawMove = this.moveDraw.bind( this );
+				this._onDrawEnd = this.endDraw.bind( this );
+				canvas.addEventListener( 'pointerdown', this._onDrawStart );
+				canvas.addEventListener( 'pointermove', this._onDrawMove );
+				canvas.addEventListener( 'pointerup', this._onDrawEnd );
+				canvas.addEventListener( 'pointerleave', this._onDrawEnd );
+			}.bind( this );
+
+			img.src = data.screenshot;
+		},
+
+		teardownDrawCanvas() {
+			const canvas = this.drawCanvas;
+			if ( canvas && this._onDrawStart ) {
+				canvas.removeEventListener( 'pointerdown', this._onDrawStart );
+				canvas.removeEventListener( 'pointermove', this._onDrawMove );
+				canvas.removeEventListener( 'pointerup', this._onDrawEnd );
+				canvas.removeEventListener( 'pointerleave', this._onDrawEnd );
+			}
+			this._onDrawStart = null;
+			this._onDrawMove = null;
+			this._onDrawEnd = null;
+			this.drawing.baseSnapshot = null;
+			this.drawing.strokes = [];
+			this.drawing.penPoints = [];
+			this.drawing.active = false;
+		},
+
+		// ── Drawing primitives ─────────────────────────────────
+
+		getDrawXY( e ) {
+			const rect = this.drawCanvas.getBoundingClientRect();
+			return {
+				x: e.clientX - rect.left,
+				y: e.clientY - rect.top,
+			};
+		},
+
+		startDraw( e ) {
+			e.preventDefault();
+			this.drawing.active = true;
+			const pos = this.getDrawXY( e );
+			this.drawing.startX = pos.x;
+			this.drawing.startY = pos.y;
+			this.drawing.penPoints = [ pos ];
+
+			if ( this.drawing.tool === 'pen' ) {
+				const ctx = this.drawCanvas.getContext( '2d' );
+				ctx.beginPath();
+				ctx.moveTo( pos.x, pos.y );
+			}
+		},
+
+		moveDraw( e ) {
+			if ( ! this.drawing.active ) {
+				return;
+			}
+			e.preventDefault();
+			const pos = this.getDrawXY( e );
+			const ctx = this.drawCanvas.getContext( '2d' );
+
+			if ( this.drawing.tool === 'pen' ) {
+				this.drawing.penPoints.push( pos );
+				ctx.lineTo( pos.x, pos.y );
+				ctx.strokeStyle = '#ef4444';
+				ctx.lineWidth = 2.5;
+				ctx.lineCap = 'round';
+				ctx.lineJoin = 'round';
+				ctx.stroke();
+			} else if ( this.drawing.tool === 'rect' ) {
+				// Redraw base + committed strokes, then draw the live rectangle.
+				this.redrawCanvas();
+				ctx.strokeStyle = '#ef4444';
+				ctx.lineWidth = 2.5;
+				ctx.lineCap = 'round';
+				ctx.setLineDash( [] );
+				ctx.strokeRect(
+					this.drawing.startX,
+					this.drawing.startY,
+					pos.x - this.drawing.startX,
+					pos.y - this.drawing.startY
+				);
+			}
+		},
+
+		endDraw( e ) {
+			if ( ! this.drawing.active ) {
+				return;
+			}
+			this.drawing.active = false;
+			const pos = this.getDrawXY( e );
+
+			if ( this.drawing.tool === 'pen' && this.drawing.penPoints.length > 1 ) {
+				this.drawing.strokes.push( {
+					type: 'pen',
+					points: this.drawing.penPoints.slice(),
+				} );
+			} else if ( this.drawing.tool === 'rect' ) {
+				const dx = pos.x - this.drawing.startX;
+				const dy = pos.y - this.drawing.startY;
+				// Ignore tiny accidental drags.
+				if ( Math.abs( dx ) > 3 || Math.abs( dy ) > 3 ) {
+					this.drawing.strokes.push( {
+						type: 'rect',
+						x: this.drawing.startX,
+						y: this.drawing.startY,
+						w: dx,
+						h: dy,
+					} );
+				}
+			}
+
+			this.drawing.penPoints = [];
+			this.redrawCanvas();
+		},
+
+		redrawCanvas() {
+			const canvas = this.drawCanvas;
+			const ctx = canvas.getContext( '2d' );
+			if ( this.drawing.baseSnapshot ) {
+				ctx.putImageData( this.drawing.baseSnapshot, 0, 0 );
+			}
+			this.drawing.strokes.forEach(
+				function ( stroke ) {
+					this.renderStroke( ctx, stroke );
+				}.bind( this )
+			);
+		},
+
+		renderStroke( ctx, stroke ) {
+			ctx.strokeStyle = '#ef4444';
+			ctx.lineWidth = 2.5;
+			ctx.lineCap = 'round';
+			ctx.lineJoin = 'round';
+			ctx.setLineDash( [] );
+
+			if ( stroke.type === 'pen' ) {
+				ctx.beginPath();
+				ctx.moveTo( stroke.points[ 0 ].x, stroke.points[ 0 ].y );
+				for ( let i = 1; i < stroke.points.length; i++ ) {
+					ctx.lineTo( stroke.points[ i ].x, stroke.points[ i ].y );
+				}
+				ctx.stroke();
+			} else if ( stroke.type === 'rect' ) {
+				ctx.strokeRect( stroke.x, stroke.y, stroke.w, stroke.h );
+			}
+		},
+
+		undoStroke() {
+			if ( ! this.drawing.strokes.length ) {
+				return;
+			}
+			this.drawing.strokes.pop();
+			this.redrawCanvas();
+		},
+
+		clearDrawing() {
+			if ( ! this.drawing.strokes.length ) {
+				return;
+			}
+			this.drawing.strokes = [];
+			this.redrawCanvas();
 		},
 
 		// ── Submission ─────────────────────────────────────────
@@ -502,6 +857,16 @@
 			submitBtn.textContent = 'Submitting…';
 
 			const data = this.captured || {};
+
+			// If the draw canvas has a base snapshot, export its current state
+			// (screenshot + spotlight annotation + any user drawings) as the
+			// submitted screenshot. Fall back to the raw screenshot if the canvas
+			// was never initialised (e.g. html2canvas unavailable).
+			let screenshotData = data.screenshot || null;
+			if ( this.drawing.baseSnapshot && this.drawCanvas ) {
+				screenshotData = this.drawCanvas.toDataURL( 'image/jpeg', 0.85 );
+			}
+
 			const payload = {
 				feedback,
 				name: nameEl.value.trim(),
@@ -519,7 +884,7 @@
 				viewportHeight: data.viewportHeight || window.innerHeight,
 				formState: data.formState || null,
 				userAgent: data.userAgent || navigator.userAgent,
-				screenshot: data.screenshot || null,
+				screenshot: screenshotData,
 			};
 
 			const self = this;
@@ -556,128 +921,6 @@
 					submitBtn.disabled = false;
 					submitBtn.textContent = 'Submit Feedback';
 				} );
-		},
-
-		/**
-		 * Draw a spotlight annotation onto the screenshot preview.
-		 *
-		 * Mirrors the visual produced by DF_SVG_Annotation::build() on the PHP side:
-		 * dark overlay with a circular spotlight cutout, a dashed element bounding box,
-		 * and a ring-and-crosshair marker at the exact click point.
-		 * The annotated result replaces the plain screenshot src on the preview <img>.
-		 *
-		 * @param {HTMLImageElement} preview The preview img element.
-		 * @param {Object}           data    Captured data from onTargetClick.
-		 */
-		annotatePreview( preview, data ) {
-			const xPct = parseFloat( data.xPercent );
-			const yPct = parseFloat( data.yPercent );
-			if ( isNaN( xPct ) || isNaN( yPct ) ) {
-				preview.style.objectPosition = '';
-				return;
-			}
-
-			preview.style.objectPosition = xPct + '% ' + yPct + '%';
-
-			const img = new Image();
-			img.onload = function () {
-				const w = img.naturalWidth;
-				const h = img.naturalHeight;
-				const canvas = document.createElement( 'canvas' );
-				canvas.width = w;
-				canvas.height = h;
-				const ctx = canvas.getContext( '2d' );
-
-				ctx.drawImage( img, 0, 0 );
-
-				const cx = ( xPct / 100 ) * w;
-				const cy = ( yPct / 100 ) * h;
-				const spotR = Math.min( w, h ) * 0.15;
-
-				// Dark overlay with circular spotlight cutout (even-odd fill).
-				ctx.fillStyle = 'rgba(0,0,0,0.6)';
-				ctx.beginPath();
-				ctx.rect( 0, 0, w, h );
-				ctx.arc( cx, cy, spotR, 0, Math.PI * 2, true );
-				ctx.fill( 'evenodd' );
-
-				// Element bounding box: two-pass dashed rect matching the SVG style.
-				const rl = parseFloat( data.rectLeft );
-				const rt = parseFloat( data.rectTop );
-				const rw = parseFloat( data.rectWidth );
-				const rh = parseFloat( data.rectHeight );
-				if (
-					! isNaN( rl ) &&
-					! isNaN( rt ) &&
-					! isNaN( rw ) &&
-					! isNaN( rh )
-				) {
-					const rx = ( rl / 100 ) * w;
-					const ry = ( rt / 100 ) * h;
-					const rW = ( rw / 100 ) * w;
-					const rH = ( rh / 100 ) * h;
-
-					ctx.setLineDash( [ 8, 4 ] );
-					ctx.lineDashOffset = 0;
-					ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-					ctx.lineWidth = 2.5;
-					ctx.strokeRect( rx, ry, rW, rH );
-
-					ctx.lineDashOffset = 4;
-					ctx.strokeStyle = '#fbbf24';
-					ctx.lineWidth = 1.5;
-					ctx.strokeRect( rx, ry, rW, rH );
-
-					ctx.setLineDash( [] );
-					ctx.lineDashOffset = 0;
-				}
-
-				// Ring: white halo then red stroke.
-				ctx.beginPath();
-				ctx.arc( cx, cy, 18, 0, Math.PI * 2 );
-				ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-				ctx.lineWidth = 4;
-				ctx.stroke();
-				ctx.strokeStyle = '#ef4444';
-				ctx.lineWidth = 2;
-				ctx.stroke();
-
-				// Crosshair arms — white pass then red pass.
-				const gap = 22,
-					arm = 14;
-				const arms = [
-					[ cx - gap - arm, cy, cx - gap, cy ],
-					[ cx + gap, cy, cx + gap + arm, cy ],
-					[ cx, cy - gap - arm, cx, cy - gap ],
-					[ cx, cy + gap, cx, cy + gap + arm ],
-				];
-				[
-					[ 'rgba(255,255,255,0.9)', 3 ],
-					[ '#ef4444', 1.5 ],
-				].forEach( function ( [ color, width ] ) {
-					ctx.strokeStyle = color;
-					ctx.lineWidth = width;
-					arms.forEach( function ( [ x1, y1, x2, y2 ] ) {
-						ctx.beginPath();
-						ctx.moveTo( x1, y1 );
-						ctx.lineTo( x2, y2 );
-						ctx.stroke();
-					} );
-				} );
-
-				// Centre dot: red with white core.
-				ctx.fillStyle = '#ef4444';
-				ctx.beginPath();
-				ctx.arc( cx, cy, 4, 0, Math.PI * 2 );
-				ctx.fill();
-				ctx.fillStyle = 'white';
-				ctx.beginPath();
-				ctx.arc( cx, cy, 2, 0, Math.PI * 2 );
-				ctx.fill();
-
-				preview.src = canvas.toDataURL( 'image/jpeg', 0.85 );
-			};
-			img.src = data.screenshot;
 		},
 
 		showSuccess() {

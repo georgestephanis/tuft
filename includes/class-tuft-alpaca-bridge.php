@@ -188,19 +188,11 @@ class Tuft_Alpaca_Bridge {
 			$content .= '<ul><li>' . implode( '</li><li>', $items ) . '</li></ul>';
 		}
 
-		// Append screenshot: SVG annotation when coordinates exist, plain img otherwise.
+		// Append screenshot — annotation is already baked into the JPEG by the client.
 		if ( $shot_id ) {
-			$has_coords = ( '' !== $x && '' !== $y );
-			if ( $has_coords ) {
-				$svg = Tuft_SVG_Annotation::build( $shot_id, (float) $x, (float) $y, $issue_id, $rect );
-				if ( $svg ) {
-					$content .= "\n<figure style=\"margin:12px 0;\">" . $svg . '</figure>';
-				}
-			} else {
-				$shot_url = wp_get_attachment_url( $shot_id );
-				if ( $shot_url ) {
-					$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'tuft' ) . '" style="max-width:100%;height:auto;display:block;" />';
-				}
+			$shot_url = wp_get_attachment_url( $shot_id );
+			if ( $shot_url ) {
+				$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'tuft' ) . '" style="max-width:100%;height:auto;display:block;" />';
 			}
 		}
 

@@ -22,7 +22,6 @@ define( 'TUFT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TUFT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'TUFT_VERSION', '1.0.0' );
 
-require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-svg-annotation.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-post-type.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-rest-controller.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-alpaca-bridge.php';

@@ -253,20 +253,66 @@ body.tuft-targeting * {
 	padding: 18px 20px 20px;
 }
 
-/* Screenshot thumbnail */
-#tuft-screenshot-preview {
-	width: 100%;
-	max-height: 160px;
-	object-fit: cover;
-	object-position: top;
-	border-radius: 4px;
-	border: 1px solid var(--tuft-border);
-	margin-bottom: 16px;
+/* Screenshot canvas — draws to the modal's inner width, height is set by JS */
+#tuft-screenshot-canvas {
 	display: none;
+	width: 100%;
+	border-radius: 4px 4px 0 0;
+	border: 1px solid var(--tuft-border);
+	border-bottom: none;
+	touch-action: none; /* prevent scroll-pan hijacking pointer events during drawing */
+	cursor: crosshair;
 }
 
-#tuft-screenshot-preview.visible {
+#tuft-screenshot-canvas.visible {
 	display: block;
+}
+
+/* Drawing toolbar — sits flush below the canvas */
+#tuft-draw-toolbar {
+	display: none; /* shown by JS once the canvas is ready */
+	align-items: center;
+	gap: 2px;
+	padding: 4px 6px;
+	background: #f9fafb;
+	border: 1px solid var(--tuft-border);
+	border-radius: 0 0 4px 4px;
+	margin-bottom: 16px;
+}
+
+.tuft-draw-tool,
+#tuft-draw-undo,
+#tuft-draw-clear {
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 5px;
+	border-radius: 4px;
+	color: var(--tuft-muted);
+	display: flex;
+	align-items: center;
+	line-height: 1;
+	transition: color 0.1s, background 0.1s;
+}
+
+.tuft-draw-tool:hover,
+#tuft-draw-undo:hover,
+#tuft-draw-clear:hover {
+	color: var(--tuft-text);
+	background: var(--tuft-border);
+}
+
+.tuft-draw-tool.tuft-draw-active {
+	color: var(--tuft-brand);
+	background: rgba(224, 138, 126, 0.14);
+}
+
+.tuft-draw-sep {
+	width: 1px;
+	height: 16px;
+	background: var(--tuft-border);
+	margin: 0 4px;
+	flex-shrink: 0;
 }
 
 /* Captured element info */

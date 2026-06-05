@@ -105,7 +105,7 @@ Yes. The plugin injects its UI via `wp_enqueue_scripts` and appends its elements
 * Feedback modal: name/email fields shown to guests, hidden for logged-in users whose account details are used automatically.
 * `tuft_feedback` custom post type with admin list table and detail meta box.
 * `tuft_feedback_submitted` action hook for custom integrations.
-* Alpaca Issue Tracker integration: auto-creates mirrored `alpaca_issue` with context comment (including annotated SVG screenshot), moves admin menu under Project Board.
+* Alpaca Issue Tracker integration: auto-creates mirrored `alpaca_issue` with context comment (including annotated screenshot), moves admin menu under Project Board.
 
 == Upgrade Notice ==
 

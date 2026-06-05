@@ -67,7 +67,7 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
    - Exits targeting mode, waits two `requestAnimationFrame` ticks for the overlay to repaint away
    - Calls `html2canvas` on `document.documentElement` (visible viewport only); bundled locally so always available
    - Opens the feedback modal
-4. Modal opens with an annotated screenshot preview (`DF.annotatePreview()`): sets the `<img>` element's `object-position` styling using the click's percentage coordinates (`xPercent`, `yPercent`) to center the crop focal point on the selected target. It then draws the screenshot onto a canvas with a spotlight cutout, optional dashed bounding-box rect, and crosshair/ring marker at the click point — matching the SVG produced server-side by `Tuft_SVG_Annotation`. The annotated JPEG replaces the plain thumbnail src.
+4. Modal opens with an interactive draw canvas (`DF.setupDrawCanvas()`): the raw screenshot is loaded into `<canvas id="tuft-screenshot-canvas">` scaled to the modal's display width, then the spotlight cutout, optional dashed bounding-box rect, and crosshair/ring marker are painted directly onto it. The resulting pixel state is saved as `drawing.baseSnapshot` (an `ImageData` object). A toolbar below the canvas offers pen (freehand), rectangle, undo, and clear tools. Pointer event listeners let the reviewer draw on the canvas before submitting; undo replays `drawing.strokes[]` from the baseSnapshot.
 5. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `tuftSettings` and submitted automatically without prompting.
 6. Modal submit → `fetch( tuftSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
 7. On success: shows a thank-you message, auto-closes after 2.5 s
@@ -80,7 +80,9 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 - Form state capture skips `type=password`, `type=hidden`, `type=submit`, and `type=button` fields.
 - `getSelector()` walks up the DOM up to 5 levels, preferring `#id` anchors and appending `:nth-of-type()` when siblings share the same tag.
 - `ignoreElements` in the `html2canvas` call skips any element whose `id` starts with `tuft-`, preventing the plugin's own UI from appearing in screenshots.
-- Setting `preview.style.objectPosition` on `img#tuft-screenshot-preview` ensures that the browser's `object-fit: cover` crop centers on the annotated focal point rather than defaults to the page top. It is reset to an empty string inside `openModal` when no screenshot is available.
+- `canvas#tuft-screenshot-canvas` has `touch-action: none` so pointer events during drawing don't trigger scroll on touch devices. Its CSS sets `width: 100%`; its pixel dimensions (`canvas.width` / `canvas.height`) are set by JS to match `canvas.offsetWidth` × proportional height — so canvas coordinates equal CSS coordinates and no scaling is needed for pointer events.
+- `drawing.baseSnapshot` (ImageData) is captured after the spotlight annotation is painted. `redrawCanvas()` calls `ctx.putImageData(baseSnapshot)` then replays all committed strokes, so Undo is O(n strokes) regardless of drawing complexity.
+- `submit()` exports `drawCanvas.toDataURL('image/jpeg', 0.85)` when `drawing.baseSnapshot` is set — this includes both the spotlight annotation and any reviewer drawings. It falls back to the raw `data.screenshot` string only when html2canvas was unavailable and the canvas was never initialised.
 
 ---
 
@@ -148,7 +150,7 @@ The bridge is always loaded. It is a no-op when Alpaca is not active (`post_type
 When Alpaca is active, on every `tuft_feedback_submitted` action:
 
 1. Creates an `alpaca_issue` whose `post_content` is the feedback text only.
-2. Immediately inserts a context comment (`issuecomment` type) containing: the feedback text in a `<p>`, a metadata `<ul>` (page, element, coordinates, viewport, submitter), and a `<figure>` with the SVG-annotated screenshot (spotlight + bounding box + crosshair marker). The comment is where reviewers see the full context; the issue body stays clean for the Kanban card title.
+2. Immediately inserts a context comment (`issuecomment` type) containing: the feedback text in a `<p>`, a metadata `<ul>` (page, element, coordinates, viewport, submitter), and an `<img>` of the screenshot. The spotlight, bounding box, crosshair, and any reviewer drawings are already baked into the JPEG on the client before submission — no server-side SVG overlay is applied. The comment is where reviewers see the full context; the issue body stays clean for the Kanban card title.
 3. Reads `alpaistr_get_statuses()` and assigns the lowest-score status (the Alpaca "default" column), respecting the `alpaca_default_status` filter.
 4. Prepends the new issue ID to `issue_order` term meta so it appears at the top of that column.
 5. Stores `alpaca_url`, `alpaca_screenwidth`, `alpaca_screenheight` so Alpaca's own context display works.
