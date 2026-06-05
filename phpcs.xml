@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="Design Feedback">
-    <description>PHP coding standards for the Design Feedback plugin.</description>
+<ruleset name="Tuft">
+    <description>PHP coding standards for the Tuft plugin.</description>
 
     <file>.</file>
     <exclude-pattern>vendor/</exclude-pattern>
@@ -20,8 +20,8 @@
     <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
         <properties>
             <property name="prefixes" type="array">
-                <element value="df"/>
-                <element value="DF"/>
+                <element value="tuft"/>
+                <element value="Tuft"/>
             </property>
         </properties>
         <exclude name="WordPress.NamingConventions.PrefixAllGlobals.ShortPrefixPassed"/>
@@ -30,7 +30,7 @@
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="design-feedback"/>
+                <element value="tuft"/>
             </property>
         </properties>
     </rule>

@@ -2,7 +2,7 @@
 /**
  * Bridge: forward design feedback submissions to Alpaca Issue Tracker.
  *
- * Hooks into `df_feedback_submitted` and creates a matching `alpaca_issue`
+ * Hooks into `tuft_feedback_submitted` and creates a matching `alpaca_issue`
  * post when the Alpaca plugin is active.  All integration logic lives here so
  * the rest of the design-feedback plugin stays Alpaca-unaware.
  *
@@ -13,7 +13,7 @@
  *                     + an SVG screenshot with a spotlight annotation marking
  *                     the exact click location.
  *
- * @package Design_Feedback
+ * @package Tuft
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,35 +23,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Bridges design feedback submissions into Alpaca Issue Tracker posts.
  */
-class DF_Alpaca_Bridge {
+class Tuft_Alpaca_Bridge {
 
 	/**
 	 * Register hooks.
 	 */
 	public function __construct() {
-		add_action( 'df_feedback_submitted', array( $this, 'create_issue' ) );
+		add_action( 'tuft_feedback_submitted', array( $this, 'create_issue' ) );
 	}
 
 	/**
-	 * Create an alpaca_issue mirroring the design_feedback post.
+	 * Create an alpaca_issue mirroring the tuft_feedback post.
 	 *
-	 * @param int $df_post_id design_feedback post ID.
+	 * @param int $df_post_id tuft_feedback post ID.
 	 */
 	public function create_issue( $df_post_id ) {
 		if ( ! post_type_exists( 'alpaca_issue' ) ) {
 			return;
 		}
 
-		$feedback = get_post_meta( $df_post_id, '_df_feedback_text', true );
+		$feedback = get_post_meta( $df_post_id, '_tuft_feedback_text', true );
 
 		if ( empty( $feedback ) ) {
 			return;
 		}
 
-		$page_url = get_post_meta( $df_post_id, '_df_page_url', true );
-		$vw       = (int) get_post_meta( $df_post_id, '_df_viewport_w', true );
-		$vh       = (int) get_post_meta( $df_post_id, '_df_viewport_h', true );
-		$ua       = get_post_meta( $df_post_id, '_df_user_agent', true );
+		$page_url = get_post_meta( $df_post_id, '_tuft_page_url', true );
+		$vw       = (int) get_post_meta( $df_post_id, '_tuft_viewport_w', true );
+		$vh       = (int) get_post_meta( $df_post_id, '_tuft_viewport_h', true );
+		$ua       = get_post_meta( $df_post_id, '_tuft_user_agent', true );
 
 		// Issue body is the feedback text only — context goes in the first comment.
 		$post_id = wp_insert_post(
@@ -84,7 +84,7 @@ class DF_Alpaca_Bridge {
 					}
 				}
 
-				/** This filter is documented in alpaca-issue-tracker/includes/api/endpoints/issues.php */
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Third-party filter defined by Alpaca Issue Tracker.
 				$status_term = apply_filters( 'alpaca_default_status', $status_term, $statuses );
 
 				if ( $status_term ) {
@@ -119,11 +119,11 @@ class DF_Alpaca_Bridge {
 				wp_set_post_terms( $post_id, $browser, 'alpaca_browser', true );
 			}
 		}
-		wp_set_post_terms( $post_id, 'Design Feedback', 'alpaca_type', true );
+		wp_set_post_terms( $post_id, 'Tuft', 'alpaca_type', true );
 
 		// Cross-reference both posts.
-		update_post_meta( $post_id, 'alpaca_df_post_id', $df_post_id );
-		update_post_meta( $df_post_id, '_df_alpaca_issue_id', $post_id );
+		update_post_meta( $post_id, 'alpaca_tuft_post_id', $df_post_id );
+		update_post_meta( $df_post_id, '_tuft_alpaca_issue_id', $post_id );
 
 		// Add the context comment (metadata + annotated screenshot).
 		$this->insert_context_comment( $post_id, $df_post_id );
@@ -138,20 +138,20 @@ class DF_Alpaca_Bridge {
 	 * an SVG screenshot annotated with a spotlight at the click location.
 	 *
 	 * @param int $issue_id    alpaca_issue post ID.
-	 * @param int $df_post_id  design_feedback post ID.
+	 * @param int $df_post_id  tuft_feedback post ID.
 	 */
 	private function insert_context_comment( $issue_id, $df_post_id ) {
-		$page_url   = get_post_meta( $df_post_id, '_df_page_url', true );
-		$page_title = get_post_meta( $df_post_id, '_df_page_title', true );
-		$selector   = get_post_meta( $df_post_id, '_df_selector', true );
-		$x          = get_post_meta( $df_post_id, '_df_x_percent', true );
-		$y          = get_post_meta( $df_post_id, '_df_y_percent', true );
-		$vw         = (int) get_post_meta( $df_post_id, '_df_viewport_w', true );
-		$vh         = (int) get_post_meta( $df_post_id, '_df_viewport_h', true );
-		$name       = get_post_meta( $df_post_id, '_df_submitter_name', true );
-		$email      = get_post_meta( $df_post_id, '_df_submitter_email', true );
-		$shot_id    = get_post_meta( $df_post_id, '_df_screenshot_id', true );
-		$rect_raw   = get_post_meta( $df_post_id, '_df_rect', true );
+		$page_url   = get_post_meta( $df_post_id, '_tuft_page_url', true );
+		$page_title = get_post_meta( $df_post_id, '_tuft_page_title', true );
+		$selector   = get_post_meta( $df_post_id, '_tuft_selector', true );
+		$x          = get_post_meta( $df_post_id, '_tuft_x_percent', true );
+		$y          = get_post_meta( $df_post_id, '_tuft_y_percent', true );
+		$vw         = (int) get_post_meta( $df_post_id, '_tuft_viewport_w', true );
+		$vh         = (int) get_post_meta( $df_post_id, '_tuft_viewport_h', true );
+		$name       = get_post_meta( $df_post_id, '_tuft_submitter_name', true );
+		$email      = get_post_meta( $df_post_id, '_tuft_submitter_email', true );
+		$shot_id    = get_post_meta( $df_post_id, '_tuft_screenshot_id', true );
+		$rect_raw   = get_post_meta( $df_post_id, '_tuft_rect', true );
 		$rect       = $rect_raw ? json_decode( $rect_raw, true ) : null;
 
 		// Build the metadata list.
@@ -187,14 +187,14 @@ class DF_Alpaca_Bridge {
 		if ( $shot_id ) {
 			$has_coords = ( '' !== $x && '' !== $y );
 			if ( $has_coords ) {
-				$svg = DF_SVG_Annotation::build( $shot_id, (float) $x, (float) $y, $issue_id, $rect );
+				$svg = Tuft_SVG_Annotation::build( $shot_id, (float) $x, (float) $y, $issue_id, $rect );
 				if ( $svg ) {
 					$content .= "\n<figure style=\"margin:12px 0;\">" . $svg . '</figure>';
 				}
 			} else {
 				$shot_url = wp_get_attachment_url( $shot_id );
 				if ( $shot_url ) {
-					$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'design-feedback' ) . '" style="max-width:100%;height:auto;display:block;" />';
+					$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'tuft' ) . '" style="max-width:100%;height:auto;display:block;" />';
 				}
 			}
 		}
@@ -208,7 +208,7 @@ class DF_Alpaca_Bridge {
 		wp_insert_comment(
 			array(
 				'comment_post_ID'      => $issue_id,
-				'comment_author'       => $user->display_name ? $user->display_name : 'Design Feedback',
+				'comment_author'       => $user->display_name ? $user->display_name : 'Tuft',
 				'comment_author_email' => $user->user_email ? $user->user_email : '',
 				'comment_content'      => $content,
 				'comment_type'         => 'issuecomment',
@@ -245,4 +245,4 @@ class DF_Alpaca_Bridge {
 	}
 }
 
-new DF_Alpaca_Bridge();
+new Tuft_Alpaca_Bridge();

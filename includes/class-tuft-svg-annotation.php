@@ -4,10 +4,10 @@
  *
  * Generates an inline SVG that composites a screenshot with a spotlight overlay
  * and a ring-and-crosshair marker at a given click location. Used in both the
- * admin detail meta box (DF_Post_Type) and the Alpaca Issue Tracker comment
- * bridge (DF_Alpaca_Bridge).
+ * admin detail meta box (Tuft_Post_Type) and the Alpaca Issue Tracker comment
+ * bridge (Tuft_Alpaca_Bridge).
  *
- * @package Design_Feedback
+ * @package Tuft
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Builds inline SVG screenshot annotations for design feedback entries.
  */
-class DF_SVG_Annotation {
+class Tuft_SVG_Annotation {
 
 	/**
 	 * Build an inline SVG showing a screenshot with a spotlight annotation.

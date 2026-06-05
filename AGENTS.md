@@ -4,7 +4,7 @@ Guidance for AI agents and contributors working in this plugin.
 
 ## Scope
 
-**Edit only:** `wp-content/plugins/design-feedback/` and all files beneath it.
+**Edit only:** `wp-content/plugins/tuft/` and all files beneath it.
 
 **Read-only reference:** `wp-content/plugins/alpaca-issue-tracker/` — understand it to know what the bridge integrates with, but never modify it.
 
@@ -12,7 +12,7 @@ Guidance for AI agents and contributors working in this plugin.
 
 ## What this plugin does
 
-`design-feedback` is a standalone visual feedback tool. A floating "Feedback" button appears on every frontend page. Clicking it enters a targeting mode where the visitor can click any element on the page; the plugin captures the DOM selector, click coordinates, viewport size, form field state, and an optional screenshot, then presents a modal for the visitor to type their feedback. On submission everything is stored locally as a `design_feedback` custom post type.
+`tuft` is a standalone visual feedback tool. A floating "Feedback" button appears on every frontend page. Clicking it enters a targeting mode where the visitor can click any element on the page; the plugin captures the DOM selector, click coordinates, viewport size, form field state, and an optional screenshot, then presents a modal for the visitor to type their feedback. On submission everything is stored locally as a `tuft_feedback` custom post type.
 
 If the **Alpaca Issue Tracker** plugin is also active, each submission is automatically mirrored as an `alpaca_issue` so it appears on the Alpaca Kanban board for triage. The two posts are cross-referenced via post meta.
 
@@ -22,10 +22,10 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 | File | Purpose |
 |------|---------|
-| `design-feedback.php` | Plugin bootstrap: constants, enqueues frontend CSS/JS, passes `dfSettings` to JS |
-| `includes/class-df-post-type.php` | `design_feedback` CPT, admin list-table columns, meta box detail view, Alpaca-aware menu placement, install-Alpaca notice |
-| `includes/class-df-rest-controller.php` | `POST /design-feedback/v1/submit` — validates, stores the CPT post + meta + screenshot attachment, fires `df_feedback_submitted` |
-| `includes/class-df-alpaca-bridge.php` | Listens to `df_feedback_submitted`; creates an `alpaca_issue` mirror when Alpaca is active |
+| `tuft.php` | Plugin bootstrap: constants, enqueues frontend CSS/JS, passes `tuftSettings` to JS |
+| `includes/class-tuft-post-type.php` | `tuft_feedback` CPT, admin list-table columns, meta box detail view, Alpaca-aware menu placement, install-Alpaca notice |
+| `includes/class-tuft-rest-controller.php` | `POST /tuft/v1/submit` — validates, stores the CPT post + meta + screenshot attachment, fires `tuft_feedback_submitted` |
+| `includes/class-tuft-alpaca-bridge.php` | Listens to `tuft_feedback_submitted`; creates an `alpaca_issue` mirror when Alpaca is active |
 | `assets/css/feedback.css` | All frontend UI styles: floating button, targeting overlay, element highlight, modal |
 | `assets/js/feedback.js` | All frontend interaction: targeting mode, element capture, screenshot, modal, REST submission |
 
@@ -35,8 +35,8 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 |------|---------|
 | `package.json` | `@wordpress/scripts` + `html2canvas` dev dependencies; `lint:js`, `lint:css`, `lint`, `copy-vendor`, and `postinstall` scripts |
 | `composer.json` | `squizlabs/php_codesniffer`, `wp-coding-standards/wpcs`, installer; `phpcs`/`phpcbf` scripts |
-| `phpcs.xml` | WordPress-Extra + WordPress-Docs ruleset, `df`/`DF` prefix, `design-feedback` text domain |
-| `.eslintrc.json` | Extends `@wordpress/eslint-plugin/recommended`; declares `dfSettings`/`html2canvas` globals |
+| `phpcs.xml` | WordPress-Extra + WordPress-Docs ruleset, `df`/`DF` prefix, `tuft` text domain |
+| `.eslintrc.json` | Extends `@wordpress/eslint-plugin/recommended`; declares `tuftSettings`/`html2canvas` globals |
 | `.stylelintrc.json` | Extends `@wordpress/stylelint-config`; disables `declaration-no-important` (intentional for targeting cursor) |
 | `.eslintignore` | Excludes `vendor/` and `node_modules/` from ESLint |
 
@@ -55,8 +55,8 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
    - Exits targeting mode, waits two `requestAnimationFrame` ticks for the overlay to repaint away
    - Calls `html2canvas` on `document.documentElement` (visible viewport only); skips gracefully if offline
    - Opens the feedback modal
-4. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `dfSettings` and submitted automatically without prompting.
-5. Modal submit → `fetch( dfSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
+4. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `tuftSettings` and submitted automatically without prompting.
+5. Modal submit → `fetch( tuftSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
 6. On success: shows a thank-you message, auto-closes after 2.5 s
 
 ### Key implementation details
@@ -71,7 +71,7 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 ## REST API
 
-**Namespace:** `design-feedback/v1`
+**Namespace:** `tuft/v1`
 
 | Route | Method | Auth | Description |
 |-------|--------|------|-------------|
@@ -103,54 +103,54 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 ---
 
-## Data model (`design_feedback` CPT)
+## Data model (`tuft_feedback` CPT)
 
 | Post field / meta key | Stores |
 |-----------------------|--------|
 | `post_title` | Auto-generated: `Feedback on "{page title}"` |
-| `_df_feedback_text` | Full feedback text |
-| `_df_page_url` | Source page URL |
-| `_df_page_title` | Source page title |
-| `_df_selector` | CSS selector of clicked element |
-| `_df_x_percent` | Click X (% of viewport width) |
-| `_df_y_percent` | Click Y (% of viewport height) |
-| `_df_rect` | JSON object `{left, top, width, height}` — element bounding box as viewport percentages |
-| `_df_viewport_w` | Viewport width in px |
-| `_df_viewport_h` | Viewport height in px |
-| `_df_form_state` | JSON-encoded form field snapshot |
-| `_df_submitter_name` | Name — entered by guest, or sourced from WP user for logged-in submitters |
-| `_df_submitter_email` | Email — same sourcing as `_df_submitter_name` |
-| `_df_user_agent` | Browser user-agent string |
-| `_df_screenshot_id` | Attachment ID of the JPEG screenshot |
-| `_df_alpaca_issue_id` | ID of the mirrored `alpaca_issue` (set by bridge) |
+| `_tuft_feedback_text` | Full feedback text |
+| `_tuft_page_url` | Source page URL |
+| `_tuft_page_title` | Source page title |
+| `_tuft_selector` | CSS selector of clicked element |
+| `_tuft_x_percent` | Click X (% of viewport width) |
+| `_tuft_y_percent` | Click Y (% of viewport height) |
+| `_tuft_rect` | JSON object `{left, top, width, height}` — element bounding box as viewport percentages |
+| `_tuft_viewport_w` | Viewport width in px |
+| `_tuft_viewport_h` | Viewport height in px |
+| `_tuft_form_state` | JSON-encoded form field snapshot |
+| `_tuft_submitter_name` | Name — entered by guest, or sourced from WP user for logged-in submitters |
+| `_tuft_submitter_email` | Email — same sourcing as `_tuft_submitter_name` |
+| `_tuft_user_agent` | Browser user-agent string |
+| `_tuft_screenshot_id` | Attachment ID of the JPEG screenshot |
+| `_tuft_alpaca_issue_id` | ID of the mirrored `alpaca_issue` (set by bridge) |
 
 ---
 
-## Alpaca Issue Tracker integration (`DF_Alpaca_Bridge`)
+## Alpaca Issue Tracker integration (`TUFT_Alpaca_Bridge`)
 
 The bridge is always loaded. It is a no-op when Alpaca is not active (`post_type_exists('alpaca_issue')` returns false).
 
-When Alpaca is active, on every `df_feedback_submitted` action:
+When Alpaca is active, on every `tuft_feedback_submitted` action:
 
 1. Creates an `alpaca_issue` whose `post_content` is the feedback text plus a plain-text context block (page, element, coordinates, viewport, submitter).
 2. Reads `alpaistr_get_statuses()` and assigns the lowest-score status (the Alpaca "default" column), respecting the `alpaca_default_status` filter.
 3. Prepends the new issue ID to `issue_order` term meta so it appears at the top of that column.
 4. Stores `alpaca_url`, `alpaca_screenwidth`, `alpaca_screenheight` so Alpaca's own context display works.
-5. Tags the issue with the detected browser (`alpaca_browser` taxonomy) and type `Design Feedback` (`alpaca_type` taxonomy).
-6. Cross-references: `_df_alpaca_issue_id` on the `design_feedback` post; `alpaca_df_post_id` on the `alpaca_issue` post.
+5. Tags the issue with the detected browser (`alpaca_browser` taxonomy) and type `Tuft` (`alpaca_type` taxonomy).
+6. Cross-references: `_tuft_alpaca_issue_id` on the `tuft_feedback` post; `alpaca_tuft_post_id` on the `alpaca_issue` post.
 7. Calls `alpaistr_clear_board_cache()` so the board reflects the new issue immediately.
 
 ### Admin menu behaviour
 
-When Alpaca is active, `DF_Post_Type::adjust_menu()` (hooked to `admin_menu` at priority 20):
-- Removes the standalone "Design Feedback" top-level menu entry.
-- Adds "Design Feedback" as a submenu under Alpaca's **Project Board** (`project-board`).
+When Alpaca is active, `TUFT_Post_Type::adjust_menu()` (hooked to `admin_menu` at priority 20):
+- Removes the standalone "Tuft" top-level menu entry.
+- Adds "Tuft" as a submenu under Alpaca's **Project Board** (`project-board`).
 
 The standard CPT list table and post-edit screen (the expanded detail view with screenshot) remain fully functional at their existing URLs.
 
 ### Install-Alpaca notice
 
-`DF_Post_Type::maybe_suggest_alpaca()` (hooked to `admin_notices`) shows a dismissible info notice on the Design Feedback list screen (`edit-design_feedback`) when Alpaca is **not** installed. The notice links to the Alpaca plugin-install page in wp-admin and is silently skipped when Alpaca is already active.
+`TUFT_Post_Type::maybe_suggest_alpaca()` (hooked to `admin_notices`) shows a dismissible info notice on the Tuft list screen (`edit-tuft_feedback`) when Alpaca is **not** installed. The notice links to the Alpaca plugin-install page in wp-admin and is silently skipped when Alpaca is already active.
 
 ---
 
@@ -158,7 +158,7 @@ The standard CPT list table and post-edit screen (the expanded detail view with 
 
 | Hook | When | Args |
 |------|------|------|
-| `df_feedback_submitted` | After a `design_feedback` post and all its meta (including screenshot attachment) are fully saved | `$post_id` (int) |
+| `tuft_feedback_submitted` | After a `tuft_feedback` post and all its meta (including screenshot attachment) are fully saved | `$post_id` (int) |
 
 Use this hook to integrate with other systems without modifying the REST controller.
 
@@ -175,4 +175,4 @@ Use this hook to integrate with other systems without modifying the REST control
 - The Alpaca bridge must never hard-depend on Alpaca functions: always guard with `function_exists()` or `post_type_exists()` before calling.
 - Do not modify `alpaca-issue-tracker` files; interact with it only through its public functions, filters, and the `alpaca_default_status` / `alpaca_user_can` filter hooks.
 - `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — do not reintroduce a CDN dependency. To upgrade: bump the version in `package.json` and run `npm install` (the `postinstall` hook copies the new file). Test that the `ignoreElements` option (used to exclude the plugin's own UI from screenshots) still works after any upgrade.
-- PHP class files must be named after the class with `class-` prepended and underscores converted to dashes, prefixed with `df-`: e.g. `DF_Post_Type` → `class-df-post-type.php`.
+- PHP class files must be named after the class with `class-` prepended and underscores converted to dashes, prefixed with `df-`: e.g. `TUFT_Post_Type` → `class-tuft-post-type.php`.

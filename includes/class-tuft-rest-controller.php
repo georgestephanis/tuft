@@ -2,7 +2,7 @@
 /**
  * REST API controller for design feedback submissions.
  *
- * @package Design_Feedback
+ * @package Tuft
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,16 +10,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Handles the /design-feedback/v1/submit REST endpoint.
+ * Handles the /tuft/v1/submit REST endpoint.
  */
-class DF_REST_Controller extends WP_REST_Controller {
+class Tuft_REST_Controller extends WP_REST_Controller {
 
 	/**
 	 * REST API namespace.
 	 *
 	 * @var string
 	 */
-	protected $namespace = 'design-feedback/v1';
+	protected $namespace = 'tuft/v1';
 
 	/**
 	 * Register hooks.
@@ -114,7 +114,7 @@ class DF_REST_Controller extends WP_REST_Controller {
 			array(
 				'post_title'  => $post_title,
 				'post_status' => 'publish',
-				'post_type'   => 'design_feedback',
+				'post_type'   => 'tuft_feedback',
 				'post_author' => get_current_user_id(),
 			)
 		);
@@ -130,17 +130,17 @@ class DF_REST_Controller extends WP_REST_Controller {
 		}
 
 		$meta_map = array(
-			'_df_feedback_text'   => $feedback,
-			'_df_page_url'        => $page_url,
-			'_df_page_title'      => $page_title,
-			'_df_selector'        => $selector,
-			'_df_x_percent'       => $x_percent,
-			'_df_y_percent'       => $y_percent,
-			'_df_viewport_w'      => $viewport_w,
-			'_df_viewport_h'      => $viewport_h,
-			'_df_submitter_name'  => $name,
-			'_df_submitter_email' => $email,
-			'_df_user_agent'      => $user_agent,
+			'_tuft_feedback_text'   => $feedback,
+			'_tuft_page_url'        => $page_url,
+			'_tuft_page_title'      => $page_title,
+			'_tuft_selector'        => $selector,
+			'_tuft_x_percent'       => $x_percent,
+			'_tuft_y_percent'       => $y_percent,
+			'_tuft_viewport_w'      => $viewport_w,
+			'_tuft_viewport_h'      => $viewport_h,
+			'_tuft_submitter_name'  => $name,
+			'_tuft_submitter_email' => $email,
+			'_tuft_user_agent'      => $user_agent,
 		);
 
 		foreach ( $meta_map as $key => $value ) {
@@ -150,13 +150,13 @@ class DF_REST_Controller extends WP_REST_Controller {
 		}
 
 		if ( $form_state ) {
-			update_post_meta( $post_id, '_df_form_state', wp_json_encode( $form_state ) );
+			update_post_meta( $post_id, '_tuft_form_state', wp_json_encode( $form_state ) );
 		}
 
 		if ( null !== $rect_left && null !== $rect_top && null !== $rect_width && null !== $rect_height ) {
 			update_post_meta(
 				$post_id,
-				'_df_rect',
+				'_tuft_rect',
 				wp_json_encode(
 					array(
 						'left'   => $rect_left,
@@ -175,9 +175,9 @@ class DF_REST_Controller extends WP_REST_Controller {
 		/**
 		 * Fires after a design feedback entry is fully saved.
 		 *
-		 * @param int $post_id The design_feedback post ID.
+		 * @param int $post_id The tuft_feedback post ID.
 		 */
-		do_action( 'df_feedback_submitted', $post_id );
+		do_action( 'tuft_feedback_submitted', $post_id );
 
 		return new WP_REST_Response(
 			array(
@@ -192,7 +192,7 @@ class DF_REST_Controller extends WP_REST_Controller {
 	 * Decode a base64 data URL and attach the image to a post.
 	 *
 	 * @param string $data_url Base64-encoded image data URL.
-	 * @param int    $post_id  The design_feedback post ID to attach the image to.
+	 * @param int    $post_id  The tuft_feedback post ID to attach the image to.
 	 */
 	private function save_screenshot( $data_url, $post_id ) {
 		if ( ! preg_match( '/^data:image\/(jpeg|png|webp);base64,/', $data_url ) ) {
@@ -219,7 +219,7 @@ class DF_REST_Controller extends WP_REST_Controller {
 		$attachment_id = wp_insert_attachment(
 			array(
 				'post_mime_type' => 'image/jpeg',
-				'post_title'     => 'Design Feedback Screenshot',
+				'post_title'     => 'Tuft Screenshot',
 				'post_status'    => 'inherit',
 			),
 			$filepath,
@@ -232,8 +232,8 @@ class DF_REST_Controller extends WP_REST_Controller {
 
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $filepath ) );
-		update_post_meta( $post_id, '_df_screenshot_id', $attachment_id );
+		update_post_meta( $post_id, '_tuft_screenshot_id', $attachment_id );
 	}
 }
 
-new DF_REST_Controller();
+new Tuft_REST_Controller();

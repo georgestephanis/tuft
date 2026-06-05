@@ -1,78 +1,120 @@
 /* =====================================================
-   Design Feedback — Frontend UI
+   Tuft — Frontend UI
    ===================================================== */
 
 :root {
-	--df-accent: #4f46e5;
-	--df-accent-hover: #4338ca;
-	--df-white: #ffffff;
-	--df-text: #1e1b4b;
-	--df-muted: #6b7280;
-	--df-border: #e5e7eb;
-	--df-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
-	--df-radius: 8px;
-	--df-z-button: 9000;
-	--df-z-overlay: 9100;
-	--df-z-highlight: 9200;
-	--df-z-modal: 9300;
+	/* ── Tuft palette ── */
+	--tuft-brand: #e08a7e;           /* Dusty coral  */
+	--tuft-brand-hover: #d47168;     /* Deeper coral */
+	--tuft-sage: #9fbe9c;            /* Sage accent  */
+	--tuft-lilac: #c9b6d9;           /* Lilac        */
+	--tuft-cream: #fbf4ec;           /* Cream        */
+	--tuft-cocoa: #43352f;           /* Cocoa / dark */
+	--tuft-white: #ffffff;
+	--tuft-text: #43352f;
+	--tuft-muted: #8a7670;
+	--tuft-border: #e8ddd4;
+	--tuft-shadow: 0 4px 24px rgba(67, 53, 47, 0.14);
+	--tuft-radius: 10px;
+	--tuft-z-button: 9000;
+	--tuft-z-overlay: 9100;
+	--tuft-z-highlight: 9200;
+	--tuft-z-modal: 9300;
+	/* System font stack — warm and rounded where available */
+	--tuft-font: ui-rounded, 'Hiragino Maru Gothic ProN', Nunito, Varela Round, system-ui, sans-serif;
 }
 
-/* ── Floating trigger button ── */
+/* ── Floating trigger button — circle FAB ── */
 
-#df-trigger {
+#tuft-trigger {
 	position: fixed;
-	right: 0;
-	top: 50%;
-	transform: translateY(-50%);
-	z-index: var(--df-z-button);
+	right: 20px;
+	bottom: 20px;
+	z-index: var(--tuft-z-button);
 
-	display: flex;
-	align-items: center;
-	gap: 7px;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	padding: 0;
 
-	background: var(--df-accent);
-	color: var(--df-white);
+	display: grid;
+	place-items: center;
+
+	background: var(--tuft-brand);
+	color: var(--tuft-white);
 	border: none;
-	border-radius: var(--df-radius) 0 0 var(--df-radius);
-	padding: 12px 16px 12px 14px;
-	font-family: inherit;
-	font-size: 13px;
-	font-weight: 600;
-	line-height: 1;
 	cursor: pointer;
-	box-shadow: -2px 2px 12px rgba(79, 70, 229, 0.35);
+	box-shadow: 0 8px 22px -6px rgba(224, 138, 126, 0.7);
 	transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+	font-family: var(--tuft-font);
+}
+
+#tuft-trigger:hover {
+	background: var(--tuft-brand-hover);
+	box-shadow: 0 10px 28px -6px rgba(224, 138, 126, 0.8);
+	transform: translateY(-3px);
+}
+
+/* Tooltip that appears on hover */
+#tuft-trigger::before {
+	content: 'Leave feedback';
+	position: absolute;
+	right: calc(100% + 10px);
+	bottom: 50%;
+	transform: translateY(50%);
+	background: var(--tuft-cocoa);
+	color: var(--tuft-white);
+	font-family: var(--tuft-font);
+	font-size: 12px;
+	font-weight: 600;
 	white-space: nowrap;
-	writing-mode: horizontal-tb;
+	padding: 6px 11px;
+	border-radius: 7px;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s ease;
 }
 
-#df-trigger:hover {
-	background: var(--df-accent-hover);
-	box-shadow: -3px 3px 18px rgba(79, 70, 229, 0.45);
-	transform: translateY(-50%) translateX(-3px);
+#tuft-trigger::after {
+	content: '';
+	position: absolute;
+	right: calc(100% + 5px);
+	bottom: 50%;
+	transform: translateY(50%) rotate(45deg);
+	width: 8px;
+	height: 8px;
+	background: var(--tuft-cocoa);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s ease;
 }
 
-#df-trigger svg {
+#tuft-trigger:hover::before,
+#tuft-trigger:hover::after {
+	opacity: 1;
+}
+
+#tuft-trigger svg {
 	flex-shrink: 0;
 }
 
 /* ── Targeting overlay ── */
 
-#df-overlay {
+#tuft-overlay {
 	position: fixed;
 	inset: 0;
 	background: rgba(15, 15, 30, 0.45);
-	z-index: var(--df-z-overlay);
+	z-index: var(--tuft-z-overlay);
 	pointer-events: none; /* clicks pass through to real elements */
 	display: none;
 	backdrop-filter: blur(1px);
 }
 
-#df-overlay.active {
+#tuft-overlay.active {
 	display: block;
 }
 
-#df-overlay-hint {
+#tuft-overlay-hint {
 	position: absolute;
 	top: 20px;
 	left: 50%;
@@ -88,7 +130,7 @@
 	letter-spacing: 0.01em;
 }
 
-#df-overlay-hint kbd {
+#tuft-overlay-hint kbd {
 	display: inline-block;
 	background: rgba(255, 255, 255, 0.18);
 	border-radius: 4px;
@@ -98,48 +140,48 @@
 }
 
 /* Crosshair cursor on everything during targeting */
-body.df-targeting,
-body.df-targeting * {
+body.tuft-targeting,
+body.tuft-targeting * {
 	cursor: crosshair !important;
 }
 
 /* ── Element highlight box ── */
 
-#df-highlight {
+#tuft-highlight {
 	position: fixed;
 	display: none;
-	z-index: var(--df-z-highlight);
+	z-index: var(--tuft-z-highlight);
 	pointer-events: none;
-	border: 2px solid var(--df-accent);
+	border: 2px solid var(--tuft-brand);
 	border-radius: 3px;
-	background: rgba(79, 70, 229, 0.08);
-	box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.2), inset 0 0 0 1px rgba(79, 70, 229, 0.1);
+	background: rgba(224, 138, 126, 0.08);
+	box-shadow: 0 0 0 1px rgba(224, 138, 126, 0.2), inset 0 0 0 1px rgba(224, 138, 126, 0.1);
 	transition: top 0.05s, left 0.05s, width 0.05s, height 0.05s;
 }
 
 /* ── Modal backdrop ── */
 
-#df-modal-backdrop {
+#tuft-modal-backdrop {
 	position: fixed;
 	inset: 0;
 	background: rgba(0, 0, 0, 0.5);
-	z-index: var(--df-z-modal);
+	z-index: var(--tuft-z-modal);
 	display: none;
 	align-items: center;
 	justify-content: center;
 	padding: 20px;
 }
 
-#df-modal-backdrop.active {
+#tuft-modal-backdrop.active {
 	display: flex;
 }
 
 /* ── Modal card ── */
 
-#df-modal {
-	background: var(--df-white);
-	border-radius: var(--df-radius);
-	box-shadow: var(--df-shadow);
+#tuft-modal {
+	background: var(--tuft-white);
+	border-radius: var(--tuft-radius);
+	box-shadow: var(--tuft-shadow);
 	width: 100%;
 	max-width: 480px;
 	max-height: 90vh;
@@ -147,134 +189,134 @@ body.df-targeting * {
 	font-family: inherit;
 }
 
-#df-modal-header {
+#tuft-modal-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	padding: 18px 20px 16px;
-	border-bottom: 1px solid var(--df-border);
+	border-bottom: 1px solid var(--tuft-border);
 }
 
-#df-modal-header h2 {
+#tuft-modal-header h2 {
 	margin: 0;
 	font-size: 16px;
 	font-weight: 700;
-	color: var(--df-text);
+	color: var(--tuft-text);
 }
 
-#df-modal-close {
+#tuft-modal-close {
 	background: none;
 	border: none;
 	cursor: pointer;
-	color: var(--df-muted);
+	color: var(--tuft-muted);
 	padding: 4px;
 	border-radius: 4px;
 	line-height: 1;
 	transition: color 0.1s, background 0.1s;
 }
 
-#df-modal-close:hover {
-	color: var(--df-text);
-	background: var(--df-border);
+#tuft-modal-close:hover {
+	color: var(--tuft-text);
+	background: var(--tuft-border);
 }
 
-#df-modal-body {
+#tuft-modal-body {
 	padding: 18px 20px 20px;
 }
 
 /* Screenshot thumbnail */
-#df-screenshot-preview {
+#tuft-screenshot-preview {
 	width: 100%;
 	max-height: 160px;
 	object-fit: cover;
 	object-position: top;
 	border-radius: 4px;
-	border: 1px solid var(--df-border);
+	border: 1px solid var(--tuft-border);
 	margin-bottom: 16px;
 	display: none;
 }
 
-#df-screenshot-preview.visible {
+#tuft-screenshot-preview.visible {
 	display: block;
 }
 
 /* Captured element info */
-#df-element-info {
+#tuft-element-info {
 	background: #f3f4f6;
 	border-radius: 5px;
 	padding: 8px 12px;
 	margin-bottom: 16px;
 	font-size: 12px;
-	color: var(--df-muted);
+	color: var(--tuft-muted);
 	display: none;
 }
 
-#df-element-info.visible {
+#tuft-element-info.visible {
 	display: block;
 }
 
-#df-element-info code {
+#tuft-element-info code {
 	color: #374151;
 	font-size: 11px;
 	word-break: break-all;
 }
 
 /* Form fields */
-.df-field {
+.tuft-field {
 	margin-bottom: 14px;
 }
 
-.df-field label {
+.tuft-field label {
 	display: block;
 	font-size: 13px;
 	font-weight: 600;
-	color: var(--df-text);
+	color: var(--tuft-text);
 	margin-bottom: 5px;
 }
 
-.df-field input,
-.df-field textarea {
+.tuft-field input,
+.tuft-field textarea {
 	width: 100%;
 	box-sizing: border-box;
-	border: 1px solid var(--df-border);
+	border: 1px solid var(--tuft-border);
 	border-radius: 5px;
 	padding: 8px 11px;
 	font-family: inherit;
 	font-size: 13px;
-	color: var(--df-text);
+	color: var(--tuft-text);
 	background: #fff;
 	transition: border-color 0.15s, box-shadow 0.15s;
 	outline: none;
 }
 
-.df-field input:focus,
-.df-field textarea:focus {
-	border-color: var(--df-accent);
-	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+.tuft-field input:focus,
+.tuft-field textarea:focus {
+	border-color: var(--tuft-brand);
+	box-shadow: 0 0 0 3px rgba(224, 138, 126, 0.18);
 }
 
-.df-field textarea {
+.tuft-field textarea {
 	resize: vertical;
 	min-height: 100px;
 	line-height: 1.5;
 }
 
 /* User fields row */
-#df-user-fields {
+#tuft-user-fields {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 12px;
 }
 
 /* Actions */
-#df-modal-actions {
+#tuft-modal-actions {
 	display: flex;
 	gap: 10px;
 	justify-content: flex-end;
 	margin-top: 18px;
 }
 
-.df-btn {
+.tuft-btn {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
@@ -288,41 +330,41 @@ body.df-targeting * {
 	transition: background 0.15s, opacity 0.15s;
 }
 
-.df-btn-primary {
-	background: var(--df-accent);
+.tuft-btn-primary {
+	background: var(--tuft-brand);
 	color: #fff;
 }
 
-.df-btn-primary:hover {
-	background: var(--df-accent-hover);
+.tuft-btn-primary:hover {
+	background: var(--tuft-brand-hover);
 }
 
-.df-btn-primary:disabled {
+.tuft-btn-primary:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
 }
 
-.df-btn-secondary {
-	background: var(--df-border);
-	color: var(--df-text);
+.tuft-btn-secondary {
+	background: var(--tuft-border);
+	color: var(--tuft-text);
 }
 
-.df-btn-secondary:hover {
+.tuft-btn-secondary:hover {
 	background: #d1d5db;
 }
 
 /* Success state */
-#df-success {
+#tuft-success {
 	text-align: center;
 	padding: 32px 20px;
 	display: none;
 }
 
-#df-success.visible {
+#tuft-success.visible {
 	display: block;
 }
 
-#df-success-icon {
+#tuft-success-icon {
 	width: 48px;
 	height: 48px;
 	background: #ecfdf5;
@@ -334,20 +376,20 @@ body.df-targeting * {
 	color: #059669;
 }
 
-#df-success h3 {
+#tuft-success h3 {
 	margin: 0 0 6px;
 	font-size: 16px;
-	color: var(--df-text);
+	color: var(--tuft-text);
 }
 
-#df-success p {
+#tuft-success p {
 	margin: 0;
 	font-size: 13px;
-	color: var(--df-muted);
+	color: var(--tuft-muted);
 }
 
 /* Error message */
-#df-error {
+#tuft-error {
 	background: #fef2f2;
 	border: 1px solid #fecaca;
 	color: #991b1b;
@@ -358,6 +400,6 @@ body.df-targeting * {
 	display: none;
 }
 
-#df-error.visible {
+#tuft-error.visible {
 	display: block;
 }

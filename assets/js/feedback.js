@@ -1,11 +1,11 @@
 ( function () {
 	'use strict';
 
-	if ( typeof dfSettings === 'undefined' ) {
+	if ( typeof tuftSettings === 'undefined' ) {
 		return;
 	}
 
-	const settings = dfSettings;
+	const settings = tuftSettings;
 
 	// ── CSS selector generator ──────────────────────────────────
 
@@ -34,7 +34,7 @@
 
 			const classes = Array.from( current.classList )
 				.filter( function ( c ) {
-					return ! c.startsWith( 'df-' );
+					return ! c.startsWith( 'tuft-' );
 				} )
 				.slice( 0, 2 );
 			if ( classes.length ) {
@@ -122,7 +122,7 @@
 			scale: Math.min( window.devicePixelRatio || 1, 2 ),
 			ignoreElements( el ) {
 				// Skip our own UI elements so they don't appear in the screenshot.
-				return !! el.id && el.id.startsWith( 'df-' );
+				return !! el.id && el.id.startsWith( 'tuft-' );
 			},
 		} )
 			.then( function ( canvas ) {
@@ -180,32 +180,41 @@
 				this.enterTargeting.bind( this )
 			);
 
-			// Logged-in users have their account details available via dfSettings.
+			// Logged-in users have their account details available via tuftSettings.
 			// Hide the name/email fields — they are still populated and submitted,
 			// just not shown, since the user doesn't need to re-enter known info.
 			if ( settings.isLoggedIn ) {
-				this.backdrop.querySelector( '#df-user-fields' ).style.display =
-					'none';
+				this.backdrop.querySelector(
+					'#tuft-user-fields'
+				).style.display = 'none';
 			}
 		},
 
 		// ── Build UI elements ──────────────────────────────────
 
 		buildButton() {
+			// Tuft puff mark: three overlapping circles (wool tuft / cloud).
+			// Left + centre circles white, right circle sage, inner dot brand coral.
 			const icon =
-				'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+				'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 22" width="22" height="16" aria-hidden="true">' +
+				'<circle cx="7" cy="16" r="6.5" fill="white"/>' +
+				'<circle cx="15" cy="13" r="8.5" fill="white"/>' +
+				'<circle cx="23" cy="16" r="6" fill="#9fbe9c"/>' +
+				'<circle cx="14.5" cy="9.5" r="2.5" fill="#e08a7e"/>' +
+				'</svg>';
 			const btn = document.createElement( 'button' );
-			btn.id = 'df-trigger';
-			btn.setAttribute( 'aria-label', 'Leave design feedback' );
-			btn.innerHTML = icon + ' Feedback';
+			btn.id = 'tuft-trigger';
+			btn.setAttribute( 'aria-label', 'Leave feedback' );
+			btn.title = 'Leave feedback';
+			btn.innerHTML = icon;
 			return btn;
 		},
 
 		buildOverlay() {
 			const overlay = document.createElement( 'div' );
-			overlay.id = 'df-overlay';
+			overlay.id = 'tuft-overlay';
 			const hint = document.createElement( 'div' );
-			hint.id = 'df-overlay-hint';
+			hint.id = 'tuft-overlay-hint';
 			hint.innerHTML =
 				'Click anywhere to place feedback &nbsp;&bull;&nbsp; <kbd>Esc</kbd> to cancel';
 			overlay.appendChild( hint );
@@ -214,55 +223,55 @@
 
 		buildHighlight() {
 			const box = document.createElement( 'div' );
-			box.id = 'df-highlight';
+			box.id = 'tuft-highlight';
 			box.setAttribute( 'aria-hidden', 'true' );
 			return box;
 		},
 
 		buildModal() {
 			const backdrop = document.createElement( 'div' );
-			backdrop.id = 'df-modal-backdrop';
+			backdrop.id = 'tuft-modal-backdrop';
 			backdrop.setAttribute( 'role', 'dialog' );
 			backdrop.setAttribute( 'aria-modal', 'true' );
 			backdrop.setAttribute( 'aria-label', 'Submit feedback' );
 
 			backdrop.innerHTML = [
-				'<div id="df-modal">',
-				'  <div id="df-modal-header">',
+				'<div id="tuft-modal">',
+				'  <div id="tuft-modal-header">',
 				'    <h2>Leave Feedback</h2>',
-				'    <button id="df-modal-close" aria-label="Close" title="Close">',
+				'    <button id="tuft-modal-close" aria-label="Close" title="Close">',
 				'      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
 				'    </button>',
 				'  </div>',
-				'  <div id="df-modal-body">',
-				'    <div id="df-success">',
-				'      <div id="df-success-icon">',
+				'  <div id="tuft-modal-body">',
+				'    <div id="tuft-success">',
+				'      <div id="tuft-success-icon">',
 				'        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
 				'      </div>',
 				'      <h3>Thanks for your feedback!</h3>',
 				'      <p>Your feedback has been saved for review.</p>',
 				'    </div>',
-				'    <div id="df-form-wrap">',
-				'      <img id="df-screenshot-preview" alt="Screenshot" />',
-				'      <div id="df-element-info"></div>',
-				'      <div id="df-error"></div>',
-				'      <div id="df-user-fields">',
+				'    <div id="tuft-form-wrap">',
+				'      <img id="tuft-screenshot-preview" alt="Screenshot" />',
+				'      <div id="tuft-element-info"></div>',
+				'      <div id="tuft-error"></div>',
+				'      <div id="tuft-user-fields">',
 				'        <div class="df-field">',
-				'          <label for="df-name">Name</label>',
-				'          <input id="df-name" type="text" placeholder="Your name" autocomplete="name" />',
+				'          <label for="tuft-name">Name</label>',
+				'          <input id="tuft-name" type="text" placeholder="Your name" autocomplete="name" />',
 				'        </div>',
 				'        <div class="df-field">',
-				'          <label for="df-email">Email</label>',
-				'          <input id="df-email" type="email" placeholder="your@email.com" autocomplete="email" />',
+				'          <label for="tuft-email">Email</label>',
+				'          <input id="tuft-email" type="email" placeholder="your@email.com" autocomplete="email" />',
 				'        </div>',
 				'      </div>',
 				'      <div class="df-field">',
-				'        <label for="df-feedback">Feedback <span style="color:#ef4444">*</span></label>',
-				'        <textarea id="df-feedback" placeholder="Describe what you\'re seeing or what could be improved…"></textarea>',
+				'        <label for="tuft-feedback">Feedback <span style="color:#ef4444">*</span></label>',
+				'        <textarea id="tuft-feedback" placeholder="Describe what you\'re seeing or what could be improved…"></textarea>',
 				'      </div>',
-				'      <div id="df-modal-actions">',
-				'        <button class="df-btn df-btn-secondary" id="df-cancel-btn" type="button">Cancel</button>',
-				'        <button class="df-btn df-btn-primary" id="df-submit-btn" type="button">Submit Feedback</button>',
+				'      <div id="tuft-modal-actions">',
+				'        <button class="df-btn df-btn-secondary" id="tuft-cancel-btn" type="button">Cancel</button>',
+				'        <button class="df-btn df-btn-primary" id="tuft-submit-btn" type="button">Submit Feedback</button>',
 				'      </div>',
 				'    </div>',
 				'  </div>',
@@ -270,13 +279,13 @@
 			].join( '\n' );
 
 			backdrop
-				.querySelector( '#df-modal-close' )
+				.querySelector( '#tuft-modal-close' )
 				.addEventListener( 'click', this.closeModal.bind( this ) );
 			backdrop
-				.querySelector( '#df-cancel-btn' )
+				.querySelector( '#tuft-cancel-btn' )
 				.addEventListener( 'click', this.closeModal.bind( this ) );
 			backdrop
-				.querySelector( '#df-submit-btn' )
+				.querySelector( '#tuft-submit-btn' )
 				.addEventListener( 'click', this.submit.bind( this ) );
 
 			// Close on backdrop click outside modal card.
@@ -299,7 +308,7 @@
 			this.targeting = true;
 			this.button.style.display = 'none';
 			this.overlay.classList.add( 'active' );
-			document.body.classList.add( 'df-targeting' );
+			document.body.classList.add( 'tuft-targeting' );
 			document.addEventListener( 'mouseover', this._onHover, true );
 			document.addEventListener( 'click', this._onClick, true );
 			document.addEventListener( 'keydown', this._onKeyDown, true );
@@ -310,7 +319,7 @@
 			this.button.style.display = '';
 			this.overlay.classList.remove( 'active' );
 			this.highlight.style.display = 'none';
-			document.body.classList.remove( 'df-targeting' );
+			document.body.classList.remove( 'tuft-targeting' );
 			document.removeEventListener( 'mouseover', this._onHover, true );
 			document.removeEventListener( 'click', this._onClick, true );
 			document.removeEventListener( 'keydown', this._onKeyDown, true );
@@ -417,10 +426,10 @@
 			const data = this.captured;
 
 			// Reset state
-			const success = this.backdrop.querySelector( '#df-success' );
-			const formWrap = this.backdrop.querySelector( '#df-form-wrap' );
-			const errorEl = this.backdrop.querySelector( '#df-error' );
-			const submitBtn = this.backdrop.querySelector( '#df-submit-btn' );
+			const success = this.backdrop.querySelector( '#tuft-success' );
+			const formWrap = this.backdrop.querySelector( '#tuft-form-wrap' );
+			const errorEl = this.backdrop.querySelector( '#tuft-error' );
+			const submitBtn = this.backdrop.querySelector( '#tuft-submit-btn' );
 			success.classList.remove( 'visible' );
 			formWrap.style.display = '';
 			errorEl.classList.remove( 'visible' );
@@ -430,7 +439,7 @@
 
 			// Screenshot preview — annotated with spotlight and element bounds.
 			const preview = this.backdrop.querySelector(
-				'#df-screenshot-preview'
+				'#tuft-screenshot-preview'
 			);
 			if ( data.screenshot ) {
 				preview.src = data.screenshot;
@@ -441,7 +450,7 @@
 			}
 
 			// Element info
-			const info = this.backdrop.querySelector( '#df-element-info' );
+			const info = this.backdrop.querySelector( '#tuft-element-info' );
 			if ( data.selector ) {
 				info.innerHTML =
 					'Element: <code>' + escapeHtml( data.selector ) + '</code>';
@@ -451,18 +460,18 @@
 			}
 
 			// Pre-fill user fields if logged in
-			this.backdrop.querySelector( '#df-name' ).value =
+			this.backdrop.querySelector( '#tuft-name' ).value =
 				settings.userName || '';
-			this.backdrop.querySelector( '#df-email' ).value =
+			this.backdrop.querySelector( '#tuft-email' ).value =
 				settings.userEmail || '';
-			this.backdrop.querySelector( '#df-feedback' ).value = '';
+			this.backdrop.querySelector( '#tuft-feedback' ).value = '';
 
 			this.backdrop.classList.add( 'active' );
 
 			// Focus feedback textarea
 			setTimeout(
 				function () {
-					this.backdrop.querySelector( '#df-feedback' ).focus();
+					this.backdrop.querySelector( '#tuft-feedback' ).focus();
 				}.bind( this ),
 				50
 			);
@@ -475,8 +484,8 @@
 		// ── Submission ─────────────────────────────────────────
 
 		submit() {
-			const feedbackEl = this.backdrop.querySelector( '#df-feedback' );
-			const errorEl = this.backdrop.querySelector( '#df-error' );
+			const feedbackEl = this.backdrop.querySelector( '#tuft-feedback' );
+			const errorEl = this.backdrop.querySelector( '#tuft-error' );
 
 			const feedback = feedbackEl.value.trim();
 			if ( ! feedback ) {
@@ -487,9 +496,9 @@
 				return;
 			}
 
-			const nameEl = this.backdrop.querySelector( '#df-name' );
-			const emailEl = this.backdrop.querySelector( '#df-email' );
-			const submitBtn = this.backdrop.querySelector( '#df-submit-btn' );
+			const nameEl = this.backdrop.querySelector( '#tuft-name' );
+			const emailEl = this.backdrop.querySelector( '#tuft-email' );
+			const submitBtn = this.backdrop.querySelector( '#tuft-submit-btn' );
 
 			errorEl.classList.remove( 'visible' );
 			submitBtn.disabled = true;
@@ -672,10 +681,10 @@
 		},
 
 		showSuccess() {
-			this.backdrop.querySelector( '#df-form-wrap' ).style.display =
+			this.backdrop.querySelector( '#tuft-form-wrap' ).style.display =
 				'none';
 			this.backdrop
-				.querySelector( '#df-success' )
+				.querySelector( '#tuft-success' )
 				.classList.add( 'visible' );
 			const self = this;
 			setTimeout( function () {

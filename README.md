@@ -1,4 +1,4 @@
-# Design Feedback
+# Tuft
 
 Visual design feedback for WordPress. A floating button lets anyone on the frontend click any element on the page, capture context, and submit a note — all without leaving the browser.
 
@@ -9,7 +9,7 @@ Visual design feedback for WordPress. A floating button lets anyone on the front
 - **Click-to-annotate** — click the "Feedback" button, then click any element on the page. The plugin captures the DOM selector, viewport coordinates, viewport dimensions, and form field state automatically.
 - **In-browser screenshots** — uses [html2canvas](https://html2canvas.hertzen.com/) (bundled locally, no CDN dependency) to capture the visible viewport at submission time.
 - **Feedback modal** — collects the visitor's feedback text. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
-- **Local storage** — submissions stored as a `design_feedback` custom post type with full metadata and a screenshot attachment.
+- **Local storage** — submissions stored as a `tuft_feedback` custom post type with full metadata and a screenshot attachment.
 - **Alpaca Issue Tracker integration** — when [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, every submission is automatically mirrored as a Kanban issue on the Alpaca board.
 
 ---
@@ -43,12 +43,12 @@ Frontend page
   • Submit / Cancel
        │
        ▼ submit
-  POST /wp-json/design-feedback/v1/submit
+  POST /wp-json/tuft/v1/submit
        │
        ▼
-  design_feedback CPT post created
+  tuft_feedback CPT post created
   Screenshot saved as media attachment
-  df_feedback_submitted action fires
+  tuft_feedback_submitted action fires
        │
        ▼ (if Alpaca active)
   alpaca_issue created, assigned to default board column
@@ -60,7 +60,7 @@ Frontend page
 
 ### Without Alpaca
 
-Submissions appear under **Design Feedback** in the admin menu. The list table shows:
+Submissions appear under **Tuft** in the admin menu. The list table shows:
 
 | Column | Contents |
 |--------|---------|
@@ -75,9 +75,9 @@ Clicking a row opens the **detail view**: full feedback text, all metadata, and 
 
 ### With Alpaca Issue Tracker installed
 
-The "Design Feedback" menu item moves under **Project Board** (Alpaca's menu). The Alpaca board becomes the primary review and triage UI — issues are tagged `Design Feedback` and `Browser: Chrome` (or whichever browser was detected) so they can be filtered.
+The "Tuft" menu item moves under **Project Board** (Alpaca's menu). The Alpaca board becomes the primary review and triage UI — issues are tagged `Tuft` and `Browser: Chrome` (or whichever browser was detected) so they can be filtered.
 
-For visual details (screenshot, selector, click coordinates, form state) that the Alpaca board does not display, click **Design Feedback** in the Project Board submenu to reach the list table, then click any row to open the full detail view.
+For visual details (screenshot, selector, click coordinates, form state) that the Alpaca board does not display, click **Tuft** in the Project Board submenu to reach the list table, then click any row to open the full detail view.
 
 ---
 
@@ -90,17 +90,17 @@ When both plugins are active:
 - Each submission automatically creates a matching `alpaca_issue`.
 - The issue body contains the feedback text plus a context block (page, element, coordinates, viewport, submitter).
 - The issue is placed at the top of the lowest-score column (your "inbox" column).
-- The issue is tagged with the submitter's browser and type `Design Feedback`.
-- Both posts are cross-referenced: the `design_feedback` post stores the Alpaca issue ID, and the Alpaca issue stores the `design_feedback` post ID.
-- The "Design Feedback" admin menu entry moves under Project Board.
+- The issue is tagged with the submitter's browser and type `Tuft`.
+- Both posts are cross-referenced: the `tuft_feedback` post stores the Alpaca issue ID, and the Alpaca issue stores the `tuft_feedback` post ID.
+- The "Tuft" admin menu entry moves under Project Board.
 
-Removing Alpaca does not affect stored `design_feedback` posts. The cross-reference meta keys (`_df_alpaca_issue_id`, `alpaca_df_post_id`) become inert but are otherwise harmless.
+Removing Alpaca does not affect stored `tuft_feedback` posts. The cross-reference meta keys (`_tuft_alpaca_issue_id`, `alpaca_tuft_post_id`) become inert but are otherwise harmless.
 
 ---
 
 ## REST API
 
-**Base URL:** `/wp-json/design-feedback/v1`
+**Base URL:** `/wp-json/tuft/v1`
 
 ### `POST /submit`
 
@@ -143,11 +143,11 @@ Open to all visitors (no authentication required). Intended for local/staging us
 ## Extension hook
 
 ```php
-add_action( 'df_feedback_submitted', function ( int $post_id ) {
-    // $post_id is the design_feedback post.
+add_action( 'tuft_feedback_submitted', function ( int $post_id ) {
+    // $post_id is the tuft_feedback post.
     // All meta is already saved; the screenshot attachment (if any) is attached.
-    $feedback = get_post_meta( $post_id, '_df_feedback_text', true );
-    $page_url = get_post_meta( $post_id, '_df_page_url', true );
+    $feedback = get_post_meta( $post_id, '_tuft_feedback_text', true );
+    $page_url = get_post_meta( $post_id, '_tuft_page_url', true );
     // ... send a Slack notification, create a GitHub issue, etc.
 } );
 ```
@@ -164,8 +164,8 @@ add_action( 'df_feedback_submitted', function ( int $post_id ) {
 
 ## Installation
 
-1. Place the plugin in `wp-content/plugins/design-feedback/`.
-2. Activate **Design Feedback**.
+1. Place the plugin in `wp-content/plugins/tuft/`.
+2. Activate **Tuft**.
 3. Visit any frontend page — the "Feedback" button appears on the right edge of the screen.
 4. Optionally install and activate **Alpaca Issue Tracker** for board-based triage.
 
@@ -190,10 +190,10 @@ html2canvas is bundled in `assets/js/vendor/html2canvas.min.js` and served direc
 
 ## Main files
 
-- [design-feedback.php](design-feedback.php) — bootstrap, script enqueues, `dfSettings` localization
-- [includes/class-df-post-type.php](includes/class-df-post-type.php) — CPT registration, admin columns, detail meta box, Alpaca menu placement, install-Alpaca notice
-- [includes/class-df-rest-controller.php](includes/class-df-rest-controller.php) — `POST /submit` endpoint, screenshot attachment saving
-- [includes/class-df-alpaca-bridge.php](includes/class-df-alpaca-bridge.php) — Alpaca Issue Tracker integration
+- [tuft.php](tuft.php) — bootstrap, script enqueues, `tuftSettings` localization
+- [includes/class-tuft-post-type.php](includes/class-tuft-post-type.php) — CPT registration, admin columns, detail meta box, Alpaca menu placement, install-Alpaca notice
+- [includes/class-tuft-rest-controller.php](includes/class-tuft-rest-controller.php) — `POST /submit` endpoint, screenshot attachment saving
+- [includes/class-tuft-alpaca-bridge.php](includes/class-tuft-alpaca-bridge.php) — Alpaca Issue Tracker integration
 - [assets/css/feedback.css](assets/css/feedback.css) — floating button, targeting overlay, element highlight, modal
 - [assets/js/feedback.js](assets/js/feedback.js) — targeting mode, screenshot capture, modal, REST submission
 

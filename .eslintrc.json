@@ -4,7 +4,7 @@
     "browser": true
   },
   "globals": {
-    "dfSettings": "readonly",
+    "tuftSettings": "readonly",
     "html2canvas": "readonly"
   },
   "rules": {

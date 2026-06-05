@@ -1,8 +1,8 @@
 <?php
 /**
- * Registers the design_feedback custom post type and its admin UI.
+ * Registers the tuft_feedback custom post type and its admin UI.
  *
- * @package Design_Feedback
+ * @package Tuft
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles post-type registration and all wp-admin list/detail UI for design feedback.
  */
-class DF_Post_Type {
+class Tuft_Post_Type {
 
 	/**
 	 * Register hooks.
@@ -22,13 +22,13 @@ class DF_Post_Type {
 		add_action( 'admin_menu', array( $this, 'adjust_menu' ), 20 );
 		add_action( 'admin_notices', array( $this, 'maybe_suggest_alpaca' ) );
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
-		add_filter( 'manage_design_feedback_posts_columns', array( $this, 'columns' ) );
-		add_action( 'manage_design_feedback_posts_custom_column', array( $this, 'render_column' ), 10, 2 );
-		add_filter( 'manage_edit-design_feedback_sortable_columns', array( $this, 'sortable_columns' ) );
+		add_filter( 'manage_tuft_feedback_posts_columns', array( $this, 'columns' ) );
+		add_action( 'manage_tuft_feedback_posts_custom_column', array( $this, 'render_column' ), 10, 2 );
+		add_filter( 'manage_edit-tuft_feedback_sortable_columns', array( $this, 'sortable_columns' ) );
 	}
 
 	/**
-	 * When Alpaca Issue Tracker is active, tuck Design Feedback under its board
+	 * When Alpaca Issue Tracker is active, tuck Tuft under its board
 	 * menu instead of showing it as a standalone top-level item.
 	 *
 	 * The standard list table and post-edit screen (the expanded detail view)
@@ -39,31 +39,31 @@ class DF_Post_Type {
 			return;
 		}
 
-		remove_menu_page( 'edit.php?post_type=design_feedback' );
+		remove_menu_page( 'edit.php?post_type=tuft_feedback' );
 
 		add_submenu_page(
 			'project-board',
-			__( 'Design Feedback', 'design-feedback' ),
-			__( 'Design Feedback', 'design-feedback' ),
+			__( 'Tuft', 'tuft' ),
+			__( 'Tuft', 'tuft' ),
 			'edit_posts',
-			'edit.php?post_type=design_feedback'
+			'edit.php?post_type=tuft_feedback'
 		);
 	}
 
 	/**
-	 * Register the design_feedback post type.
+	 * Register the tuft_feedback post type.
 	 */
 	public function register() {
 		register_post_type(
-			'design_feedback',
+			'tuft_feedback',
 			array(
 				'labels'          => array(
-					'name'               => __( 'Design Feedback', 'design-feedback' ),
-					'singular_name'      => __( 'Feedback Entry', 'design-feedback' ),
-					'menu_name'          => __( 'Design Feedback', 'design-feedback' ),
-					'all_items'          => __( 'All Feedback', 'design-feedback' ),
-					'not_found'          => __( 'No feedback submitted yet.', 'design-feedback' ),
-					'not_found_in_trash' => __( 'No feedback in trash.', 'design-feedback' ),
+					'name'               => __( 'Tuft', 'tuft' ),
+					'singular_name'      => __( 'Feedback Entry', 'tuft' ),
+					'menu_name'          => __( 'Tuft', 'tuft' ),
+					'all_items'          => __( 'All Feedback', 'tuft' ),
+					'not_found'          => __( 'No feedback submitted yet.', 'tuft' ),
+					'not_found_in_trash' => __( 'No feedback in trash.', 'tuft' ),
 				),
 				'public'          => false,
 				'show_ui'         => true,
@@ -82,12 +82,12 @@ class DF_Post_Type {
 	}
 
 	/**
-	 * Suggest installing Alpaca Issue Tracker on the design_feedback list screen
+	 * Suggest installing Alpaca Issue Tracker on the tuft_feedback list screen
 	 * when it is not already active.
 	 */
 	public function maybe_suggest_alpaca() {
 		$screen = get_current_screen();
-		if ( ! $screen || 'edit-design_feedback' !== $screen->id ) {
+		if ( ! $screen || 'edit-tuft_feedback' !== $screen->id ) {
 			return;
 		}
 		if ( post_type_exists( 'alpaca_issue' ) ) {
@@ -100,7 +100,7 @@ class DF_Post_Type {
 				<?php
 				printf(
 					/* translators: 1: opening <a> tag, 2: closing </a> tag */
-					esc_html__( 'Want a Kanban board to track and triage these submissions? Install %1$sAlpaca Issue Tracker%2$s — Design Feedback will automatically forward new submissions to your board.', 'design-feedback' ),
+					esc_html__( 'Want a Kanban board to track and triage these submissions? Install %1$sAlpaca Issue Tracker%2$s — Tuft will automatically forward new submissions to your board.', 'tuft' ),
 					'<a href="' . esc_url( $install_url ) . '">',
 					'</a>'
 				);
@@ -111,7 +111,7 @@ class DF_Post_Type {
 	}
 
 	/**
-	 * Define the columns shown on the design_feedback list table.
+	 * Define the columns shown on the tuft_feedback list table.
 	 *
 	 * @param array $columns Default column map.
 	 * @return array Modified column map.
@@ -119,11 +119,11 @@ class DF_Post_Type {
 	public function columns( array $columns ) {
 		return array(
 			'cb'            => $columns['cb'],
-			'title'         => __( 'Feedback', 'design-feedback' ),
-			'df_page'       => __( 'Page', 'design-feedback' ),
-			'df_element'    => __( 'Element', 'design-feedback' ),
-			'df_submitter'  => __( 'Submitted By', 'design-feedback' ),
-			'df_screenshot' => __( 'Screenshot', 'design-feedback' ),
+			'title'         => __( 'Feedback', 'tuft' ),
+			'df_page'       => __( 'Page', 'tuft' ),
+			'df_element'    => __( 'Element', 'tuft' ),
+			'df_submitter'  => __( 'Submitted By', 'tuft' ),
+			'df_screenshot' => __( 'Screenshot', 'tuft' ),
 			'date'          => $columns['date'],
 		);
 	}
@@ -149,13 +149,13 @@ class DF_Post_Type {
 		switch ( $column ) {
 
 			case 'title':
-				$text = get_post_meta( $post_id, '_df_feedback_text', true );
+				$text = get_post_meta( $post_id, '_tuft_feedback_text', true );
 				echo '<strong>' . esc_html( wp_trim_words( $text, 20, '…' ) ) . '</strong>';
 				break;
 
 			case 'df_page':
-				$url   = get_post_meta( $post_id, '_df_page_url', true );
-				$title = get_post_meta( $post_id, '_df_page_title', true );
+				$url   = get_post_meta( $post_id, '_tuft_page_url', true );
+				$title = get_post_meta( $post_id, '_tuft_page_title', true );
 				if ( $url ) {
 					$label = $title ? $title : wp_parse_url( $url, PHP_URL_PATH );
 					echo '<a href="' . esc_url( $url ) . '" target="_blank">' . esc_html( $label ) . '</a>';
@@ -163,15 +163,15 @@ class DF_Post_Type {
 				break;
 
 			case 'df_element':
-				$selector = get_post_meta( $post_id, '_df_selector', true );
+				$selector = get_post_meta( $post_id, '_tuft_selector', true );
 				echo $selector
 					? '<code style="font-size:11px;word-break:break-all;">' . esc_html( $selector ) . '</code>'
 					: '<span class="description">—</span>';
 				break;
 
 			case 'df_submitter':
-				$name  = get_post_meta( $post_id, '_df_submitter_name', true );
-				$email = get_post_meta( $post_id, '_df_submitter_email', true );
+				$name  = get_post_meta( $post_id, '_tuft_submitter_name', true );
+				$email = get_post_meta( $post_id, '_tuft_submitter_email', true );
 				if ( $name ) {
 					echo esc_html( $name );
 					if ( $email ) {
@@ -185,7 +185,7 @@ class DF_Post_Type {
 				break;
 
 			case 'df_screenshot':
-				$id = get_post_meta( $post_id, '_df_screenshot_id', true );
+				$id = get_post_meta( $post_id, '_tuft_screenshot_id', true );
 				echo $id
 					? wp_get_attachment_image( $id, array( 80, 55 ), false, array( 'style' => 'border:1px solid #ddd;border-radius:2px;' ) )
 					: '<span class="description">—</span>';
@@ -194,14 +194,14 @@ class DF_Post_Type {
 	}
 
 	/**
-	 * Register the Feedback Details meta box on the design_feedback edit screen.
+	 * Register the Feedback Details meta box on the tuft_feedback edit screen.
 	 */
 	public function add_meta_box() {
 		add_meta_box(
 			'df-details',
-			__( 'Feedback Details', 'design-feedback' ),
+			__( 'Feedback Details', 'tuft' ),
 			array( $this, 'render_meta_box' ),
-			'design_feedback',
+			'tuft_feedback',
 			'normal',
 			'high'
 		);
@@ -213,20 +213,20 @@ class DF_Post_Type {
 	 * @param WP_Post $post Current post object.
 	 */
 	public function render_meta_box( WP_Post $post ) {
-		$text       = get_post_meta( $post->ID, '_df_feedback_text', true );
-		$page_url   = get_post_meta( $post->ID, '_df_page_url', true );
-		$page_title = get_post_meta( $post->ID, '_df_page_title', true );
-		$selector   = get_post_meta( $post->ID, '_df_selector', true );
-		$x          = get_post_meta( $post->ID, '_df_x_percent', true );
-		$y          = get_post_meta( $post->ID, '_df_y_percent', true );
-		$vw         = get_post_meta( $post->ID, '_df_viewport_w', true );
-		$vh         = get_post_meta( $post->ID, '_df_viewport_h', true );
-		$name       = get_post_meta( $post->ID, '_df_submitter_name', true );
-		$email      = get_post_meta( $post->ID, '_df_submitter_email', true );
-		$ua         = get_post_meta( $post->ID, '_df_user_agent', true );
-		$form_state = get_post_meta( $post->ID, '_df_form_state', true );
-		$shot_id    = get_post_meta( $post->ID, '_df_screenshot_id', true );
-		$rect_raw   = get_post_meta( $post->ID, '_df_rect', true );
+		$text       = get_post_meta( $post->ID, '_tuft_feedback_text', true );
+		$page_url   = get_post_meta( $post->ID, '_tuft_page_url', true );
+		$page_title = get_post_meta( $post->ID, '_tuft_page_title', true );
+		$selector   = get_post_meta( $post->ID, '_tuft_selector', true );
+		$x          = get_post_meta( $post->ID, '_tuft_x_percent', true );
+		$y          = get_post_meta( $post->ID, '_tuft_y_percent', true );
+		$vw         = get_post_meta( $post->ID, '_tuft_viewport_w', true );
+		$vh         = get_post_meta( $post->ID, '_tuft_viewport_h', true );
+		$name       = get_post_meta( $post->ID, '_tuft_submitter_name', true );
+		$email      = get_post_meta( $post->ID, '_tuft_submitter_email', true );
+		$ua         = get_post_meta( $post->ID, '_tuft_user_agent', true );
+		$form_state = get_post_meta( $post->ID, '_tuft_form_state', true );
+		$shot_id    = get_post_meta( $post->ID, '_tuft_screenshot_id', true );
+		$rect_raw   = get_post_meta( $post->ID, '_tuft_rect', true );
 		$rect       = $rect_raw ? json_decode( $rect_raw, true ) : null;
 		?>
 		<style>
@@ -242,7 +242,7 @@ class DF_Post_Type {
 		<table class="form-table df-meta-table">
 			<?php if ( $page_url ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Page', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Page', 'tuft' ); ?></th>
 				<td>
 					<a href="<?php echo esc_url( $page_url ); ?>" target="_blank"><?php echo esc_html( $page_title ? $page_title : $page_url ); ?></a><br>
 					<small><?php echo esc_html( $page_url ); ?></small>
@@ -252,21 +252,21 @@ class DF_Post_Type {
 
 			<?php if ( $selector ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Element', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Element', 'tuft' ); ?></th>
 				<td><code><?php echo esc_html( $selector ); ?></code></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( '' !== $x && '' !== $y ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Click Position', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Click Position', 'tuft' ); ?></th>
 				<td><?php echo esc_html( $x . '% × ' . $y . '%' ); ?></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( is_array( $rect ) && isset( $rect['left'], $rect['top'], $rect['width'], $rect['height'] ) ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Element Bounds', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Element Bounds', 'tuft' ); ?></th>
 				<td>
 					<?php
 					echo esc_html(
@@ -280,14 +280,14 @@ class DF_Post_Type {
 
 			<?php if ( $vw && $vh ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Viewport', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Viewport', 'tuft' ); ?></th>
 				<td><?php echo esc_html( $vw . ' × ' . $vh . 'px' ); ?></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( $name || $email ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Submitted By', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Submitted By', 'tuft' ); ?></th>
 				<td>
 					<?php echo esc_html( $name ); ?>
 					<?php if ( $email ) : ?>
@@ -299,27 +299,27 @@ class DF_Post_Type {
 
 			<?php if ( $ua ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'User Agent', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'User Agent', 'tuft' ); ?></th>
 				<td><small><?php echo esc_html( $ua ); ?></small></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( $form_state ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Form State', 'design-feedback' ); ?></th>
+				<th><?php esc_html_e( 'Form State', 'tuft' ); ?></th>
 				<td><pre style="margin:0;font-size:11px;white-space:pre-wrap;background:#f9f9f9;padding:8px;"><?php echo esc_html( $form_state ); ?></pre></td>
 			</tr>
 			<?php endif; ?>
 		</table>
 
 		<?php
-		$alpaca_id = get_post_meta( $post->ID, '_df_alpaca_issue_id', true );
+		$alpaca_id = get_post_meta( $post->ID, '_tuft_alpaca_issue_id', true );
 		if ( $alpaca_id ) :
 			$board_url   = admin_url( 'admin.php?page=project-board' );
 			$alpaca_post = get_post( $alpaca_id );
 			?>
 			<p style="margin-top:16px;">
-				<strong><?php esc_html_e( 'Alpaca Issue Tracker:', 'design-feedback' ); ?></strong>
+				<strong><?php esc_html_e( 'Alpaca Issue Tracker:', 'tuft' ); ?></strong>
 				<a href="<?php echo esc_url( $board_url ); ?>" target="_blank">
 					<?php echo $alpaca_post ? esc_html( $alpaca_post->post_title ) : '#' . (int) $alpaca_id; ?>
 				</a>
@@ -328,12 +328,12 @@ class DF_Post_Type {
 		<?php endif; ?>
 
 		<?php if ( $shot_id ) : ?>
-			<h3 style="margin-top:20px;"><?php esc_html_e( 'Screenshot', 'design-feedback' ); ?></h3>
+			<h3 style="margin-top:20px;"><?php esc_html_e( 'Screenshot', 'tuft' ); ?></h3>
 			<?php
 			$shot_url   = wp_get_attachment_url( $shot_id );
 			$has_coords = ( '' !== $x && '' !== $y );
 			if ( $has_coords ) {
-				$svg = DF_SVG_Annotation::build( $shot_id, (float) $x, (float) $y, $post->ID, $rect );
+				$svg = Tuft_SVG_Annotation::build( $shot_id, (float) $x, (float) $y, $post->ID, $rect );
 				if ( $svg ) {
 					echo '<a href="' . esc_url( $shot_url ) . '" target="_blank" style="display:block;">';
 					echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG built entirely from trusted meta + esc_url/esc_attr calls within the method.
@@ -351,4 +351,4 @@ class DF_Post_Type {
 }
 
 
-new DF_Post_Type();
+new Tuft_Post_Type();
