@@ -102,7 +102,7 @@ function tuft_playground_setup() {
 <?php
 /**
  * Plugin Name: Tuft Playground CORS Workaround
- * Description: Rewrites cross-origin asset URLs to same-origin for html2canvas inside WordPress Playground.
+ * Description: Adds crossorigin="anonymous" to all enqueued stylesheets for html2canvas inside WordPress Playground.
  * Version: 1.0.0
  * Author: Tuft Demo Setup
  */
@@ -111,95 +111,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-add_action( 'wp_print_footer_scripts', 'tuft_playground_cors_workaround', 1 );
+// Add crossorigin="anonymous" to all enqueued stylesheets.
+add_filter( 'style_loader_tag', 'tuft_playground_style_loader_tag', 10, 4 );
 
 /**
- * Output the JS snippet in the footer to rewrite stylesheet and image URLs to the same-origin scope URL.
+ * Filter the enqueued style tags to add crossorigin="anonymous".
+ *
+ * @param string $tag    The link tag.
+ * @param string $handle The stylesheet handle.
+ * @param string $src    The stylesheet source URL.
+ * @param string $media  The stylesheet media attribute.
+ * @return string The filtered link tag.
  */
-function tuft_playground_cors_workaround() {
-	?>
-	<script id="tuft-playground-cors-workaround">
-	(function() {
-		function fixPlaygroundAssets() {
-			var scopeMatch = window.location.pathname.match(/^\/scope[:/]([^/]+)/);
-			if (!scopeMatch) {
-				return;
-			}
-			var scope = scopeMatch[0];
-			var sameOriginBase = window.location.origin;
-
-			// Rewrite stylesheet links to be same-origin
-			document.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
-				var href = link.getAttribute('href');
-				if (!href) {
-					return;
-				}
-
-				if (
-					href.indexOf(window.location.origin) === -1 &&
-					(href.indexOf('/wp-content/') !== -1 || href.indexOf('/wp-includes/') !== -1)
-				) {
-					var relPath = '';
-					var wpContentIdx = href.indexOf('/wp-content/');
-					var wpIncludesIdx = href.indexOf('/wp-includes/');
-
-					if (wpContentIdx !== -1) {
-						relPath = href.substring(wpContentIdx);
-					} else if (wpIncludesIdx !== -1) {
-						relPath = href.substring(wpIncludesIdx);
-					}
-
-					if (relPath) {
-						link.setAttribute('href', sameOriginBase + relPath);
-					}
-				}
-			});
-
-			// Rewrite images to be same-origin to prevent tainted canvas / mixed content blocks
-			document.querySelectorAll('img').forEach(function(img) {
-				var src = img.getAttribute('src');
-				if (!src) {
-					return;
-				}
-
-				if (
-					src.indexOf(window.location.origin) === -1 &&
-					(src.indexOf('/wp-content/') !== -1 || src.indexOf('/wp-includes/') !== -1)
-				) {
-					var relPath = '';
-					var wpContentIdx = src.indexOf('/wp-content/');
-					var wpIncludesIdx = src.indexOf('/wp-includes/');
-
-					if (wpContentIdx !== -1) {
-						relPath = src.substring(wpContentIdx);
-					} else if (wpIncludesIdx !== -1) {
-						relPath = src.substring(wpIncludesIdx);
-					}
-
-					if (relPath) {
-						img.setAttribute('src', sameOriginBase + relPath);
-					}
-				}
-			});
-		}
-
-		// Run on load
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', fixPlaygroundAssets);
-		} else {
-			fixPlaygroundAssets();
-		}
-
-		// Run when targeting button is clicked
-		document.addEventListener('click', function(e) {
-			var trigger = e.target.closest('#tuft-trigger');
-			if (trigger) {
-				fixPlaygroundAssets();
-			}
-		}, true);
-	})();
-	</script>
-	<?php
+function tuft_playground_style_loader_tag( $tag, $handle, $src, $media ) {
+	if ( false !== strpos( $src, 'localhost' ) || false !== strpos( $src, '127.0.0.1' ) ) {
+		$rel        = 'rel';
+		$stylesheet = 'stylesheet';
+		$tag        = str_replace( "<link {$rel}='{$stylesheet}'", "<link {$rel}='{$stylesheet}' crossorigin='anonymous'", $tag );
+		$tag        = str_replace( "<link {$rel}=\"{$stylesheet}\"", "<link {$rel}=\"{$stylesheet}\" crossorigin=\"anonymous\"", $tag );
+	}
+	return $tag;
 }
 PHP;
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
