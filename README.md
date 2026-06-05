@@ -1,5 +1,9 @@
 # Tuft
 
+![Tuft — Soft on clients. Sharp on the details.](assets/wporg/banner-772x250.png)
+
+[![Try in WordPress Playground](https://playground.wordpress.net/assets/playground-badge.svg)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/georgestephanis/tuft/trunk/.github/blueprint.json)
+
 Visual design feedback for WordPress. A floating button lets anyone on the frontend click any element on the page, capture context, and submit a note — all without leaving the browser.
 
 ---
