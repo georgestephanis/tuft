@@ -29,7 +29,8 @@
 #tuft-trigger {
 	position: fixed;
 	right: 20px;
-	bottom: 20px;
+	top: 66.67%;
+	transform: translateY(-50%);
 	z-index: var(--tuft-z-button);
 
 	width: 56px;
@@ -52,7 +53,7 @@
 #tuft-trigger:hover {
 	background: var(--tuft-brand-hover);
 	box-shadow: 0 10px 28px -6px rgba(224, 138, 126, 0.8);
-	transform: translateY(-3px);
+	transform: translateY(calc(-50% - 3px));
 }
 
 /* Tooltip that appears on hover */
