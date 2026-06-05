@@ -4,7 +4,7 @@
  *
  * Hooks into `tuft_feedback_submitted` and creates a matching `alpaca_issue`
  * post when the Alpaca plugin is active.  All integration logic lives here so
- * the rest of the design-feedback plugin stays Alpaca-unaware.
+ * the rest of the Tuft plugin stays Alpaca-unaware.
  *
  * Structure:
  *   - Issue title   → first ~10 words of the feedback text.

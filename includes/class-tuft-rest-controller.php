@@ -208,7 +208,7 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 		}
 
 		$upload_dir = wp_upload_dir();
-		$filename   = 'design-feedback-' . $post_id . '-' . time() . '.jpg';
+		$filename   = 'tuft-' . $post_id . '-' . time() . '.jpg';
 		$filepath   = trailingslashit( $upload_dir['path'] ) . $filename;
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
