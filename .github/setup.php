@@ -91,6 +91,119 @@ function tuft_playground_setup() {
 		// Mirror to Alpaca if active.
 		do_action( 'tuft_feedback_submitted', $post_id );
 	}
+
+	// ── Create mu-plugin for WordPress Playground CORS workaround ───────────
+	$mu_plugins_dir = defined( 'WPMU_PLUGIN_DIR' ) ? WPMU_PLUGIN_DIR : WP_CONTENT_DIR . '/mu-plugins';
+	if ( ! file_exists( $mu_plugins_dir ) ) {
+		wp_mkdir_p( $mu_plugins_dir );
+	}
+
+	$workaround_code = <<<'PHP'
+<?php
+/**
+ * Plugin Name: Tuft Playground CORS Workaround
+ * Description: Rewrites cross-origin asset URLs to same-origin for html2canvas inside WordPress Playground.
+ * Version: 1.0.0
+ * Author: Tuft Demo Setup
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+add_action( 'wp_print_footer_scripts', 'tuft_playground_cors_workaround', 1 );
+
+/**
+ * Output the JS snippet in the footer to rewrite stylesheet and image URLs to the same-origin scope URL.
+ */
+function tuft_playground_cors_workaround() {
+	?>
+	<script id="tuft-playground-cors-workaround">
+	(function() {
+		function fixPlaygroundAssets() {
+			var scopeMatch = window.location.pathname.match(/^\/scope\/([^/]+)/);
+			if (!scopeMatch) {
+				return;
+			}
+			var scope = scopeMatch[0];
+			var sameOriginBase = window.location.origin + scope;
+
+			// Rewrite stylesheet links to be same-origin
+			document.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
+				var href = link.getAttribute('href');
+				if (!href) {
+					return;
+				}
+
+				if (
+					href.indexOf(window.location.origin) === -1 &&
+					(href.indexOf('/wp-content/') !== -1 || href.indexOf('/wp-includes/') !== -1)
+				) {
+					var relPath = '';
+					var wpContentIdx = href.indexOf('/wp-content/');
+					var wpIncludesIdx = href.indexOf('/wp-includes/');
+
+					if (wpContentIdx !== -1) {
+						relPath = href.substring(wpContentIdx);
+					} else if (wpIncludesIdx !== -1) {
+						relPath = href.substring(wpIncludesIdx);
+					}
+
+					if (relPath) {
+						link.setAttribute('href', sameOriginBase + relPath);
+					}
+				}
+			});
+
+			// Rewrite images to be same-origin to prevent tainted canvas / mixed content blocks
+			document.querySelectorAll('img').forEach(function(img) {
+				var src = img.getAttribute('src');
+				if (!src) {
+					return;
+				}
+
+				if (
+					src.indexOf(window.location.origin) === -1 &&
+					(src.indexOf('/wp-content/') !== -1 || src.indexOf('/wp-includes/') !== -1)
+				) {
+					var relPath = '';
+					var wpContentIdx = src.indexOf('/wp-content/');
+					var wpIncludesIdx = src.indexOf('/wp-includes/');
+
+					if (wpContentIdx !== -1) {
+						relPath = src.substring(wpContentIdx);
+					} else if (wpIncludesIdx !== -1) {
+						relPath = src.substring(wpIncludesIdx);
+					}
+
+					if (relPath) {
+						img.setAttribute('src', sameOriginBase + relPath);
+					}
+				}
+			});
+		}
+
+		// Run on load
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fixPlaygroundAssets);
+		} else {
+			fixPlaygroundAssets();
+		}
+
+		// Run when targeting button is clicked
+		document.addEventListener('click', function(e) {
+			var trigger = e.target.closest('#tuft-trigger');
+			if (trigger) {
+				fixPlaygroundAssets();
+			}
+		}, true);
+	})();
+	</script>
+	<?php
+}
+PHP;
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+	file_put_contents( $mu_plugins_dir . '/tuft-playground-cors.php', $workaround_code );
 }
 
 tuft_playground_setup();

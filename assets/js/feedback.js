@@ -102,77 +102,6 @@
 		return state.length ? state : null;
 	}
 
-	// ── WordPress Playground CORS/Mixed Content Workaround ──────
-
-	function fixPlaygroundAssets() {
-		const scopeMatch =
-			window.location.pathname.match( /^\/scope\/([^/]+)/ );
-		if ( ! scopeMatch ) {
-			return;
-		}
-
-		const scope = scopeMatch[ 0 ];
-		const sameOriginBase = window.location.origin + scope;
-
-		// Rewrite stylesheet links to be same-origin
-		document
-			.querySelectorAll( 'link[rel="stylesheet"]' )
-			.forEach( function ( link ) {
-				const href = link.getAttribute( 'href' );
-				if ( ! href ) {
-					return;
-				}
-
-				if (
-					href.indexOf( window.location.origin ) === -1 &&
-					( href.indexOf( '/wp-content/' ) !== -1 ||
-						href.indexOf( '/wp-includes/' ) !== -1 )
-				) {
-					let relPath = '';
-					const wpContentIdx = href.indexOf( '/wp-content/' );
-					const wpIncludesIdx = href.indexOf( '/wp-includes/' );
-
-					if ( wpContentIdx !== -1 ) {
-						relPath = href.substring( wpContentIdx );
-					} else if ( wpIncludesIdx !== -1 ) {
-						relPath = href.substring( wpIncludesIdx );
-					}
-
-					if ( relPath ) {
-						link.setAttribute( 'href', sameOriginBase + relPath );
-					}
-				}
-			} );
-
-		// Rewrite images to be same-origin to prevent tainted canvas / mixed content blocks
-		document.querySelectorAll( 'img' ).forEach( function ( img ) {
-			const src = img.getAttribute( 'src' );
-			if ( ! src ) {
-				return;
-			}
-
-			if (
-				src.indexOf( window.location.origin ) === -1 &&
-				( src.indexOf( '/wp-content/' ) !== -1 ||
-					src.indexOf( '/wp-includes/' ) !== -1 )
-			) {
-				let relPath = '';
-				const wpContentIdx = src.indexOf( '/wp-content/' );
-				const wpIncludesIdx = src.indexOf( '/wp-includes/' );
-
-				if ( wpContentIdx !== -1 ) {
-					relPath = src.substring( wpContentIdx );
-				} else if ( wpIncludesIdx !== -1 ) {
-					relPath = src.substring( wpIncludesIdx );
-				}
-
-				if ( relPath ) {
-					img.setAttribute( 'src', sameOriginBase + relPath );
-				}
-			}
-		} );
-	}
-
 	// ── Screenshot ─────────────────────────────────────────────
 
 	function takeScreenshot() {
@@ -232,7 +161,6 @@
 		_onKeyDown: null,
 
 		init() {
-			fixPlaygroundAssets();
 			this._onClick = this.onTargetClick.bind( this );
 			this._onHover = this.onTargetHover.bind( this );
 			this._onKeyDown = this.onKeyDown.bind( this );
@@ -373,7 +301,6 @@
 		// ── Targeting mode ─────────────────────────────────────
 
 		enterTargeting() {
-			fixPlaygroundAssets();
 			this.targeting = true;
 			this.button.style.display = 'none';
 			this.overlay.classList.add( 'active' );
