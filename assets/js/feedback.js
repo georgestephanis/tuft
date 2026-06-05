@@ -1,0 +1,557 @@
+( function () {
+	'use strict';
+
+	if ( typeof dfSettings === 'undefined' ) {
+		return;
+	}
+
+	const settings = dfSettings;
+
+	// ── CSS selector generator ──────────────────────────────────
+
+	function getSelector( target ) {
+		if ( ! target || target === document.body ) {
+			return 'body';
+		}
+		if ( target.id ) {
+			return '#' + target.id;
+		}
+
+		const parts = [];
+		let current = target;
+
+		while (
+			current &&
+			current !== document.body &&
+			current.nodeType === Node.ELEMENT_NODE
+		) {
+			if ( current.id ) {
+				parts.unshift( '#' + current.id );
+				break;
+			}
+
+			let part = current.tagName.toLowerCase();
+
+			const classes = Array.from( current.classList )
+				.filter( function ( c ) {
+					return ! c.startsWith( 'df-' );
+				} )
+				.slice( 0, 2 );
+			if ( classes.length ) {
+				part += '.' + classes.join( '.' );
+			}
+
+			const siblings = current.parentElement
+				? Array.from( current.parentElement.children ).filter(
+						function ( s ) {
+							return s.tagName === current.tagName;
+						}
+				  )
+				: [];
+			if ( siblings.length > 1 ) {
+				part +=
+					':nth-of-type(' + ( siblings.indexOf( current ) + 1 ) + ')';
+			}
+
+			parts.unshift( part );
+			current = current.parentElement;
+			if ( parts.length >= 5 ) {
+				break;
+			}
+		}
+
+		return parts.join( ' > ' );
+	}
+
+	// ── Form state capture ──────────────────────────────────────
+
+	function getFormState() {
+		const forms = document.querySelectorAll( 'form' );
+		if ( ! forms.length ) {
+			return null;
+		}
+
+		const state = [];
+		forms.forEach( function ( form, i ) {
+			const fields = {};
+			form.querySelectorAll( 'input, select, textarea' ).forEach(
+				function ( field ) {
+					if ( ! field.name ) {
+						return;
+					}
+					if (
+						field.type === 'password' ||
+						field.type === 'hidden' ||
+						field.type === 'submit' ||
+						field.type === 'button'
+					) {
+						return;
+					}
+					if ( field.type === 'checkbox' || field.type === 'radio' ) {
+						fields[ field.name ] = field.checked;
+					} else {
+						fields[ field.name ] = field.value;
+					}
+				}
+			);
+			if ( Object.keys( fields ).length ) {
+				state.push( { index: i, id: form.id || null, fields } );
+			}
+		} );
+
+		return state.length ? state : null;
+	}
+
+	// ── Screenshot ─────────────────────────────────────────────
+
+	function takeScreenshot() {
+		if ( typeof html2canvas === 'undefined' ) {
+			return Promise.resolve( null );
+		}
+
+		return html2canvas( document.documentElement, {
+			x: window.scrollX,
+			y: window.scrollY,
+			width: window.innerWidth,
+			height: window.innerHeight,
+			windowWidth: document.documentElement.scrollWidth,
+			windowHeight: document.documentElement.scrollHeight,
+			useCORS: true,
+			allowTaint: true,
+			logging: false,
+			scale: Math.min( window.devicePixelRatio || 1, 2 ),
+			ignoreElements( el ) {
+				// Skip our own UI elements so they don't appear in the screenshot.
+				return !! el.id && el.id.startsWith( 'df-' );
+			},
+		} )
+			.then( function ( canvas ) {
+				const MAX_W = 1280;
+				if ( canvas.width <= MAX_W ) {
+					return canvas.toDataURL( 'image/jpeg', 0.75 );
+				}
+				const scaled = document.createElement( 'canvas' );
+				const ratio = MAX_W / canvas.width;
+				scaled.width = MAX_W;
+				scaled.height = Math.round( canvas.height * ratio );
+				scaled
+					.getContext( '2d' )
+					.drawImage( canvas, 0, 0, scaled.width, scaled.height );
+				return scaled.toDataURL( 'image/jpeg', 0.75 );
+			} )
+			.catch( function () {
+				return null;
+			} );
+	}
+
+	// ── Core widget ────────────────────────────────────────────
+
+	const DF = {
+		targeting: false,
+		captured: null,
+		button: null,
+		overlay: null,
+		highlight: null,
+		backdrop: null,
+		modal: null,
+
+		// Bound event handlers (stored for removeEventListener)
+		_onClick: null,
+		_onHover: null,
+		_onKeyDown: null,
+
+		init() {
+			this._onClick = this.onTargetClick.bind( this );
+			this._onHover = this.onTargetHover.bind( this );
+			this._onKeyDown = this.onKeyDown.bind( this );
+
+			this.button = this.buildButton();
+			this.overlay = this.buildOverlay();
+			this.highlight = this.buildHighlight();
+			this.backdrop = this.buildModal();
+
+			document.body.appendChild( this.button );
+			document.body.appendChild( this.overlay );
+			document.body.appendChild( this.highlight );
+			document.body.appendChild( this.backdrop );
+
+			this.button.addEventListener(
+				'click',
+				this.enterTargeting.bind( this )
+			);
+		},
+
+		// ── Build UI elements ──────────────────────────────────
+
+		buildButton() {
+			const icon =
+				'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+			const btn = document.createElement( 'button' );
+			btn.id = 'df-trigger';
+			btn.setAttribute( 'aria-label', 'Leave design feedback' );
+			btn.innerHTML = icon + ' Feedback';
+			return btn;
+		},
+
+		buildOverlay() {
+			const overlay = document.createElement( 'div' );
+			overlay.id = 'df-overlay';
+			const hint = document.createElement( 'div' );
+			hint.id = 'df-overlay-hint';
+			hint.innerHTML =
+				'Click anywhere to place feedback &nbsp;&bull;&nbsp; <kbd>Esc</kbd> to cancel';
+			overlay.appendChild( hint );
+			return overlay;
+		},
+
+		buildHighlight() {
+			const box = document.createElement( 'div' );
+			box.id = 'df-highlight';
+			box.setAttribute( 'aria-hidden', 'true' );
+			return box;
+		},
+
+		buildModal() {
+			const backdrop = document.createElement( 'div' );
+			backdrop.id = 'df-modal-backdrop';
+			backdrop.setAttribute( 'role', 'dialog' );
+			backdrop.setAttribute( 'aria-modal', 'true' );
+			backdrop.setAttribute( 'aria-label', 'Submit feedback' );
+
+			backdrop.innerHTML = [
+				'<div id="df-modal">',
+				'  <div id="df-modal-header">',
+				'    <h2>Leave Feedback</h2>',
+				'    <button id="df-modal-close" aria-label="Close" title="Close">',
+				'      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+				'    </button>',
+				'  </div>',
+				'  <div id="df-modal-body">',
+				'    <div id="df-success">',
+				'      <div id="df-success-icon">',
+				'        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+				'      </div>',
+				'      <h3>Thanks for your feedback!</h3>',
+				'      <p>Your feedback has been saved for review.</p>',
+				'    </div>',
+				'    <div id="df-form-wrap">',
+				'      <img id="df-screenshot-preview" alt="Screenshot" />',
+				'      <div id="df-element-info"></div>',
+				'      <div id="df-error"></div>',
+				'      <div id="df-user-fields">',
+				'        <div class="df-field">',
+				'          <label for="df-name">Name</label>',
+				'          <input id="df-name" type="text" placeholder="Your name" autocomplete="name" />',
+				'        </div>',
+				'        <div class="df-field">',
+				'          <label for="df-email">Email</label>',
+				'          <input id="df-email" type="email" placeholder="your@email.com" autocomplete="email" />',
+				'        </div>',
+				'      </div>',
+				'      <div class="df-field">',
+				'        <label for="df-feedback">Feedback <span style="color:#ef4444">*</span></label>',
+				'        <textarea id="df-feedback" placeholder="Describe what you\'re seeing or what could be improved…"></textarea>',
+				'      </div>',
+				'      <div id="df-modal-actions">',
+				'        <button class="df-btn df-btn-secondary" id="df-cancel-btn" type="button">Cancel</button>',
+				'        <button class="df-btn df-btn-primary" id="df-submit-btn" type="button">Submit Feedback</button>',
+				'      </div>',
+				'    </div>',
+				'  </div>',
+				'</div>',
+			].join( '\n' );
+
+			backdrop
+				.querySelector( '#df-modal-close' )
+				.addEventListener( 'click', this.closeModal.bind( this ) );
+			backdrop
+				.querySelector( '#df-cancel-btn' )
+				.addEventListener( 'click', this.closeModal.bind( this ) );
+			backdrop
+				.querySelector( '#df-submit-btn' )
+				.addEventListener( 'click', this.submit.bind( this ) );
+
+			// Close on backdrop click outside modal card.
+			backdrop.addEventListener(
+				'click',
+				function ( e ) {
+					if ( e.target === backdrop ) {
+						this.closeModal();
+					}
+				}.bind( this )
+			);
+
+			this.modal = backdrop;
+			return backdrop;
+		},
+
+		// ── Targeting mode ─────────────────────────────────────
+
+		enterTargeting() {
+			this.targeting = true;
+			this.button.style.display = 'none';
+			this.overlay.classList.add( 'active' );
+			document.body.classList.add( 'df-targeting' );
+			document.addEventListener( 'mouseover', this._onHover, true );
+			document.addEventListener( 'click', this._onClick, true );
+			document.addEventListener( 'keydown', this._onKeyDown, true );
+		},
+
+		exitTargeting() {
+			this.targeting = false;
+			this.button.style.display = '';
+			this.overlay.classList.remove( 'active' );
+			this.highlight.style.display = 'none';
+			document.body.classList.remove( 'df-targeting' );
+			document.removeEventListener( 'mouseover', this._onHover, true );
+			document.removeEventListener( 'click', this._onClick, true );
+			document.removeEventListener( 'keydown', this._onKeyDown, true );
+		},
+
+		onTargetHover( e ) {
+			const skip = [
+				this.highlight,
+				this.overlay,
+				this.button,
+				this.backdrop,
+			];
+			if (
+				skip.some( function ( el ) {
+					return el && ( e.target === el || el.contains( e.target ) );
+				} )
+			) {
+				return;
+			}
+
+			const rect = e.target.getBoundingClientRect();
+			const hl = this.highlight;
+			hl.style.cssText = [
+				'display:block',
+				'top:' + rect.top + 'px',
+				'left:' + rect.left + 'px',
+				'width:' + rect.width + 'px',
+				'height:' + rect.height + 'px',
+			].join( ';' );
+		},
+
+		onTargetClick( e ) {
+			// Don't intercept the trigger button itself.
+			if (
+				this.button &&
+				( e.target === this.button || this.button.contains( e.target ) )
+			) {
+				return;
+			}
+
+			e.preventDefault();
+			e.stopImmediatePropagation();
+
+			const target = e.target;
+			const selector = getSelector( target );
+
+			this.captured = {
+				selector,
+				xPercent: ( ( e.clientX / window.innerWidth ) * 100 ).toFixed(
+					1
+				),
+				yPercent: ( ( e.clientY / window.innerHeight ) * 100 ).toFixed(
+					1
+				),
+				viewportWidth: window.innerWidth,
+				viewportHeight: window.innerHeight,
+				pageUrl: settings.pageUrl,
+				pageTitle: document.title,
+				formState: getFormState(),
+				userAgent: navigator.userAgent,
+				screenshot: null,
+			};
+
+			this.exitTargeting();
+
+			// Allow two frames for the overlay to repaint away before screenshotting.
+			const self = this;
+			requestAnimationFrame( function () {
+				requestAnimationFrame( function () {
+					takeScreenshot().then( function ( dataUrl ) {
+						self.captured.screenshot = dataUrl;
+						self.openModal();
+					} );
+				} );
+			} );
+		},
+
+		onKeyDown( e ) {
+			if ( e.key === 'Escape' ) {
+				this.exitTargeting();
+			}
+		},
+
+		// ── Modal ──────────────────────────────────────────────
+
+		openModal() {
+			const data = this.captured;
+
+			// Reset state
+			const success = this.backdrop.querySelector( '#df-success' );
+			const formWrap = this.backdrop.querySelector( '#df-form-wrap' );
+			const errorEl = this.backdrop.querySelector( '#df-error' );
+			const submitBtn = this.backdrop.querySelector( '#df-submit-btn' );
+			success.classList.remove( 'visible' );
+			formWrap.style.display = '';
+			errorEl.classList.remove( 'visible' );
+			errorEl.textContent = '';
+			submitBtn.disabled = false;
+			submitBtn.textContent = 'Submit Feedback';
+
+			// Screenshot preview
+			const preview = this.backdrop.querySelector(
+				'#df-screenshot-preview'
+			);
+			if ( data.screenshot ) {
+				preview.src = data.screenshot;
+				preview.classList.add( 'visible' );
+			} else {
+				preview.classList.remove( 'visible' );
+			}
+
+			// Element info
+			const info = this.backdrop.querySelector( '#df-element-info' );
+			if ( data.selector ) {
+				info.innerHTML =
+					'Element: <code>' + escapeHtml( data.selector ) + '</code>';
+				info.classList.add( 'visible' );
+			} else {
+				info.classList.remove( 'visible' );
+			}
+
+			// Pre-fill user fields if logged in
+			this.backdrop.querySelector( '#df-name' ).value =
+				settings.userName || '';
+			this.backdrop.querySelector( '#df-email' ).value =
+				settings.userEmail || '';
+			this.backdrop.querySelector( '#df-feedback' ).value = '';
+
+			this.backdrop.classList.add( 'active' );
+
+			// Focus feedback textarea
+			setTimeout(
+				function () {
+					this.backdrop.querySelector( '#df-feedback' ).focus();
+				}.bind( this ),
+				50
+			);
+		},
+
+		closeModal() {
+			this.backdrop.classList.remove( 'active' );
+		},
+
+		// ── Submission ─────────────────────────────────────────
+
+		submit() {
+			const feedbackEl = this.backdrop.querySelector( '#df-feedback' );
+			const errorEl = this.backdrop.querySelector( '#df-error' );
+
+			const feedback = feedbackEl.value.trim();
+			if ( ! feedback ) {
+				errorEl.textContent =
+					'Please describe your feedback before submitting.';
+				errorEl.classList.add( 'visible' );
+				feedbackEl.focus();
+				return;
+			}
+
+			const nameEl = this.backdrop.querySelector( '#df-name' );
+			const emailEl = this.backdrop.querySelector( '#df-email' );
+			const submitBtn = this.backdrop.querySelector( '#df-submit-btn' );
+
+			errorEl.classList.remove( 'visible' );
+			submitBtn.disabled = true;
+			submitBtn.textContent = 'Submitting…';
+
+			const data = this.captured || {};
+			const payload = {
+				feedback,
+				name: nameEl.value.trim(),
+				email: emailEl.value.trim(),
+				pageUrl: data.pageUrl || '',
+				pageTitle: data.pageTitle || document.title,
+				selector: data.selector || '',
+				xPercent: data.xPercent || '',
+				yPercent: data.yPercent || '',
+				viewportWidth: data.viewportWidth || window.innerWidth,
+				viewportHeight: data.viewportHeight || window.innerHeight,
+				formState: data.formState || null,
+				userAgent: data.userAgent || navigator.userAgent,
+				screenshot: data.screenshot || null,
+			};
+
+			const self = this;
+			fetch( settings.restUrl + '/submit', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': settings.nonce,
+				},
+				body: JSON.stringify( payload ),
+			} )
+				.then( function ( res ) {
+					return res.json().then( function ( body ) {
+						return { ok: res.ok, body };
+					} );
+				} )
+				.then( function ( result ) {
+					if ( result.ok && result.body.success ) {
+						self.showSuccess();
+					} else {
+						const msg =
+							( result.body && result.body.message ) ||
+							'Something went wrong. Please try again.';
+						errorEl.textContent = msg;
+						errorEl.classList.add( 'visible' );
+						submitBtn.disabled = false;
+						submitBtn.textContent = 'Submit Feedback';
+					}
+				} )
+				.catch( function () {
+					errorEl.textContent =
+						'Network error. Please check your connection and try again.';
+					errorEl.classList.add( 'visible' );
+					submitBtn.disabled = false;
+					submitBtn.textContent = 'Submit Feedback';
+				} );
+		},
+
+		showSuccess() {
+			this.backdrop.querySelector( '#df-form-wrap' ).style.display =
+				'none';
+			this.backdrop
+				.querySelector( '#df-success' )
+				.classList.add( 'visible' );
+			const self = this;
+			setTimeout( function () {
+				self.closeModal();
+			}, 2500 );
+		},
+	};
+
+	// ── Utility ────────────────────────────────────────────────
+
+	function escapeHtml( str ) {
+		return str
+			.replace( /&/g, '&amp;' )
+			.replace( /</g, '&lt;' )
+			.replace( />/g, '&gt;' )
+			.replace( /"/g, '&quot;' );
+	}
+
+	// ── Boot ───────────────────────────────────────────────────
+
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', function () {
+			DF.init();
+		} );
+	} else {
+		DF.init();
+	}
+} )();

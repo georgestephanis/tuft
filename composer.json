@@ -1,0 +1,28 @@
+{
+  "name": "georgestephanis/design-feedback",
+  "description": "Visual design feedback plugin for WordPress.",
+  "type": "wordpress-plugin",
+  "authors": [
+    {
+      "name": "George Stephanis",
+      "homepage": "https://github.com/georgestephanis"
+    }
+  ],
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.10",
+    "wp-coding-standards/wpcs": "^3.1",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+  },
+  "scripts": {
+    "phpcs": "phpcs",
+    "phpcbf": "phpcbf"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  }
+}

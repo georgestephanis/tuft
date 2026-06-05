@@ -1,0 +1,13 @@
+{
+  "extends": [ "plugin:@wordpress/eslint-plugin/recommended" ],
+  "env": {
+    "browser": true
+  },
+  "globals": {
+    "dfSettings": "readonly",
+    "html2canvas": "readonly"
+  },
+  "rules": {
+    "jsdoc/require-jsdoc": "off"
+  }
+}

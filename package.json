@@ -1,0 +1,14 @@
+{
+  "name": "design-feedback",
+  "version": "1.0.0",
+  "description": "Visual design feedback with click-to-annotate and screenshots.",
+  "private": true,
+  "scripts": {
+    "lint:js": "wp-scripts lint-js assets/js",
+    "lint:css": "wp-scripts lint-style assets/css",
+    "lint": "npm run lint:js && npm run lint:css"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0"
+  }
+}

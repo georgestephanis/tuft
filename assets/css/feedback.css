@@ -1,0 +1,363 @@
+/* =====================================================
+   Design Feedback — Frontend UI
+   ===================================================== */
+
+:root {
+	--df-accent: #4f46e5;
+	--df-accent-hover: #4338ca;
+	--df-white: #ffffff;
+	--df-text: #1e1b4b;
+	--df-muted: #6b7280;
+	--df-border: #e5e7eb;
+	--df-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+	--df-radius: 8px;
+	--df-z-button: 9000;
+	--df-z-overlay: 9100;
+	--df-z-highlight: 9200;
+	--df-z-modal: 9300;
+}
+
+/* ── Floating trigger button ── */
+
+#df-trigger {
+	position: fixed;
+	right: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: var(--df-z-button);
+
+	display: flex;
+	align-items: center;
+	gap: 7px;
+
+	background: var(--df-accent);
+	color: var(--df-white);
+	border: none;
+	border-radius: var(--df-radius) 0 0 var(--df-radius);
+	padding: 12px 16px 12px 14px;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	box-shadow: -2px 2px 12px rgba(79, 70, 229, 0.35);
+	transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+	white-space: nowrap;
+	writing-mode: horizontal-tb;
+}
+
+#df-trigger:hover {
+	background: var(--df-accent-hover);
+	box-shadow: -3px 3px 18px rgba(79, 70, 229, 0.45);
+	transform: translateY(-50%) translateX(-3px);
+}
+
+#df-trigger svg {
+	flex-shrink: 0;
+}
+
+/* ── Targeting overlay ── */
+
+#df-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(15, 15, 30, 0.45);
+	z-index: var(--df-z-overlay);
+	pointer-events: none; /* clicks pass through to real elements */
+	display: none;
+	backdrop-filter: blur(1px);
+}
+
+#df-overlay.active {
+	display: block;
+}
+
+#df-overlay-hint {
+	position: absolute;
+	top: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.75);
+	color: #fff;
+	font-size: 13px;
+	font-family: inherit;
+	padding: 8px 18px;
+	border-radius: 100px;
+	white-space: nowrap;
+	pointer-events: none;
+	letter-spacing: 0.01em;
+}
+
+#df-overlay-hint kbd {
+	display: inline-block;
+	background: rgba(255, 255, 255, 0.18);
+	border-radius: 4px;
+	padding: 1px 6px;
+	font-family: inherit;
+	font-size: 12px;
+}
+
+/* Crosshair cursor on everything during targeting */
+body.df-targeting,
+body.df-targeting * {
+	cursor: crosshair !important;
+}
+
+/* ── Element highlight box ── */
+
+#df-highlight {
+	position: fixed;
+	display: none;
+	z-index: var(--df-z-highlight);
+	pointer-events: none;
+	border: 2px solid var(--df-accent);
+	border-radius: 3px;
+	background: rgba(79, 70, 229, 0.08);
+	box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.2), inset 0 0 0 1px rgba(79, 70, 229, 0.1);
+	transition: top 0.05s, left 0.05s, width 0.05s, height 0.05s;
+}
+
+/* ── Modal backdrop ── */
+
+#df-modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: var(--df-z-modal);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+}
+
+#df-modal-backdrop.active {
+	display: flex;
+}
+
+/* ── Modal card ── */
+
+#df-modal {
+	background: var(--df-white);
+	border-radius: var(--df-radius);
+	box-shadow: var(--df-shadow);
+	width: 100%;
+	max-width: 480px;
+	max-height: 90vh;
+	overflow-y: auto;
+	font-family: inherit;
+}
+
+#df-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 18px 20px 16px;
+	border-bottom: 1px solid var(--df-border);
+}
+
+#df-modal-header h2 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--df-text);
+}
+
+#df-modal-close {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--df-muted);
+	padding: 4px;
+	border-radius: 4px;
+	line-height: 1;
+	transition: color 0.1s, background 0.1s;
+}
+
+#df-modal-close:hover {
+	color: var(--df-text);
+	background: var(--df-border);
+}
+
+#df-modal-body {
+	padding: 18px 20px 20px;
+}
+
+/* Screenshot thumbnail */
+#df-screenshot-preview {
+	width: 100%;
+	max-height: 160px;
+	object-fit: cover;
+	object-position: top;
+	border-radius: 4px;
+	border: 1px solid var(--df-border);
+	margin-bottom: 16px;
+	display: none;
+}
+
+#df-screenshot-preview.visible {
+	display: block;
+}
+
+/* Captured element info */
+#df-element-info {
+	background: #f3f4f6;
+	border-radius: 5px;
+	padding: 8px 12px;
+	margin-bottom: 16px;
+	font-size: 12px;
+	color: var(--df-muted);
+	display: none;
+}
+
+#df-element-info.visible {
+	display: block;
+}
+
+#df-element-info code {
+	color: #374151;
+	font-size: 11px;
+	word-break: break-all;
+}
+
+/* Form fields */
+.df-field {
+	margin-bottom: 14px;
+}
+
+.df-field label {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--df-text);
+	margin-bottom: 5px;
+}
+
+.df-field input,
+.df-field textarea {
+	width: 100%;
+	box-sizing: border-box;
+	border: 1px solid var(--df-border);
+	border-radius: 5px;
+	padding: 8px 11px;
+	font-family: inherit;
+	font-size: 13px;
+	color: var(--df-text);
+	background: #fff;
+	transition: border-color 0.15s, box-shadow 0.15s;
+	outline: none;
+}
+
+.df-field input:focus,
+.df-field textarea:focus {
+	border-color: var(--df-accent);
+	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.df-field textarea {
+	resize: vertical;
+	min-height: 100px;
+	line-height: 1.5;
+}
+
+/* User fields row */
+#df-user-fields {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+/* Actions */
+#df-modal-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+	margin-top: 18px;
+}
+
+.df-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 9px 18px;
+	border-radius: 5px;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	border: none;
+	transition: background 0.15s, opacity 0.15s;
+}
+
+.df-btn-primary {
+	background: var(--df-accent);
+	color: #fff;
+}
+
+.df-btn-primary:hover {
+	background: var(--df-accent-hover);
+}
+
+.df-btn-primary:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.df-btn-secondary {
+	background: var(--df-border);
+	color: var(--df-text);
+}
+
+.df-btn-secondary:hover {
+	background: #d1d5db;
+}
+
+/* Success state */
+#df-success {
+	text-align: center;
+	padding: 32px 20px;
+	display: none;
+}
+
+#df-success.visible {
+	display: block;
+}
+
+#df-success-icon {
+	width: 48px;
+	height: 48px;
+	background: #ecfdf5;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0 auto 14px;
+	color: #059669;
+}
+
+#df-success h3 {
+	margin: 0 0 6px;
+	font-size: 16px;
+	color: var(--df-text);
+}
+
+#df-success p {
+	margin: 0;
+	font-size: 13px;
+	color: var(--df-muted);
+}
+
+/* Error message */
+#df-error {
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	color: #991b1b;
+	border-radius: 5px;
+	padding: 8px 12px;
+	font-size: 13px;
+	margin-bottom: 14px;
+	display: none;
+}
+
+#df-error.visible {
+	display: block;
+}
