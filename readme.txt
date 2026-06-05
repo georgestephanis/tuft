@@ -19,7 +19,7 @@ Design Feedback adds a floating button to every page on your site. When clicked,
 * **Click-to-annotate** — click the "Feedback" button then click any element. The hovered element highlights so you know exactly what you're selecting.
 * **In-browser screenshots** — uses html2canvas to capture the visible viewport at the moment of submission. Gracefully skipped if the CDN is unreachable.
 * **Context capture** — records the CSS selector, viewport-relative click coordinates, viewport dimensions, and any visible form field values (passwords excluded).
-* **Feedback modal** — clean overlay collects the visitor's text, name, and email. Pre-fills name and email for logged-in users.
+* **Feedback modal** — clean overlay collects the visitor's feedback text. Logged-in users are not prompted for name or email — their WordPress account details are used automatically. Guest visitors see name and email fields.
 * **Local storage** — submissions saved as a `design_feedback` custom post type with full metadata and a screenshot attachment.
 * **Admin review** — list table with columns for feedback text, source page, element selector, submitter, and screenshot thumbnail. Full detail view with screenshot in the post editor.
 * **Alpaca Issue Tracker integration** — if [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, each submission is automatically mirrored as a Kanban issue on the Alpaca board. The Design Feedback admin menu moves under the Alpaca Project Board menu.
@@ -51,6 +51,8 @@ No settings page is required. The plugin works immediately on activation.
 = Who can submit feedback? =
 
 By default, anyone who can visit the page — including logged-out visitors. This is intentional for client review workflows where guests do not have WordPress accounts. See the security notes if you want to restrict submissions to logged-in users.
+
+Logged-in users have a streamlined experience: the name and email fields are hidden in the modal and their WordPress account details are submitted automatically.
 
 = Where are submissions stored? =
 
@@ -95,12 +97,13 @@ Yes. The plugin injects its UI via `wp_enqueue_scripts` and appends its elements
 = 1.0.0 =
 * Initial release.
 * Click-to-annotate with element highlighting and crosshair targeting mode.
-* In-browser viewport screenshot via html2canvas.
+* Element bounding box captured and shown as a dashed rectangle in screenshot annotations.
+* In-browser viewport screenshot via html2canvas, annotated with a spotlight and crosshair at the click point.
 * Form field state capture (passwords excluded).
-* Feedback modal with name, email, and text fields; auto-filled for logged-in users.
+* Feedback modal: name/email fields shown to guests, hidden for logged-in users whose account details are used automatically.
 * `design_feedback` custom post type with admin list table and detail meta box.
 * `df_feedback_submitted` action hook for custom integrations.
-* Alpaca Issue Tracker integration: auto-creates mirrored `alpaca_issue` on submission, moves admin menu under Project Board.
+* Alpaca Issue Tracker integration: auto-creates mirrored `alpaca_issue` with context comment (including annotated SVG screenshot), moves admin menu under Project Board.
 
 == Upgrade Notice ==
 

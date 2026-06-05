@@ -179,6 +179,14 @@
 				'click',
 				this.enterTargeting.bind( this )
 			);
+
+			// Logged-in users have their account details available via dfSettings.
+			// Hide the name/email fields — they are still populated and submitted,
+			// just not shown, since the user doesn't need to re-enter known info.
+			if ( settings.isLoggedIn ) {
+				this.backdrop.querySelector( '#df-user-fields' ).style.display =
+					'none';
+			}
 		},
 
 		// ── Build UI elements ──────────────────────────────────

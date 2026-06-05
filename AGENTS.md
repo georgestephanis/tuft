@@ -51,12 +51,13 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
    - Registers capture-phase `mouseover` (highlight update) and `click` (capture) listeners on `document`
 3. Click in targeting mode → `DF.onTargetClick()`:
    - `preventDefault()` + `stopImmediatePropagation()` to suppress any element's own handlers
-   - Records `{ selector, xPercent, yPercent, viewportWidth, viewportHeight, pageUrl, pageTitle, formState, userAgent }`
+   - Records `{ selector, xPercent, yPercent, rectLeft, rectTop, rectWidth, rectHeight, viewportWidth, viewportHeight, pageUrl, pageTitle, formState, userAgent }`
    - Exits targeting mode, waits two `requestAnimationFrame` ticks for the overlay to repaint away
    - Calls `html2canvas` on `document.documentElement` (visible viewport only); skips gracefully if offline
    - Opens the feedback modal
-4. Modal submit → `fetch( dfSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
-5. On success: shows a thank-you message, auto-closes after 2.5 s
+4. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `dfSettings` and submitted automatically without prompting.
+5. Modal submit → `fetch( dfSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
+6. On success: shows a thank-you message, auto-closes after 2.5 s
 
 ### Key implementation details
 
@@ -86,12 +87,16 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 | `selector` | string | No | CSS selector of clicked element |
 | `xPercent` | float | No | Click X as % of viewport width |
 | `yPercent` | float | No | Click Y as % of viewport height |
+| `rectLeft` | float | No | Element bounding box left edge as % of viewport width |
+| `rectTop` | float | No | Element bounding box top edge as % of viewport height |
+| `rectWidth` | float | No | Element bounding box width as % of viewport width |
+| `rectHeight` | float | No | Element bounding box height as % of viewport height |
 | `viewportWidth` | int | No | Viewport width in px |
 | `viewportHeight` | int | No | Viewport height in px |
 | `formState` | array | No | Captured form field values |
 | `userAgent` | string | No | `navigator.userAgent` |
-| `name` | string | No | Submitter name (pre-filled from WP user if logged in) |
-| `email` | string | No | Submitter email |
+| `name` | string | No | Submitter name — shown in modal for guests; auto-populated from WP session for logged-in users |
+| `email` | string | No | Submitter email — same behaviour as `name` |
 | `screenshot` | string | No | Base64 JPEG data URL; saved as a media attachment |
 
 **Response:** `{ "success": true, "id": <post_id> }` on 201, or a WP error on 4xx/5xx.
@@ -109,11 +114,12 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 | `_df_selector` | CSS selector of clicked element |
 | `_df_x_percent` | Click X (% of viewport width) |
 | `_df_y_percent` | Click Y (% of viewport height) |
+| `_df_rect` | JSON object `{left, top, width, height}` — element bounding box as viewport percentages |
 | `_df_viewport_w` | Viewport width in px |
 | `_df_viewport_h` | Viewport height in px |
 | `_df_form_state` | JSON-encoded form field snapshot |
-| `_df_submitter_name` | Name from form or logged-in user |
-| `_df_submitter_email` | Email from form or logged-in user |
+| `_df_submitter_name` | Name — entered by guest, or sourced from WP user for logged-in submitters |
+| `_df_submitter_email` | Email — same sourcing as `_df_submitter_name` |
 | `_df_user_agent` | Browser user-agent string |
 | `_df_screenshot_id` | Attachment ID of the JPEG screenshot |
 | `_df_alpaca_issue_id` | ID of the mirrored `alpaca_issue` (set by bridge) |

@@ -8,7 +8,7 @@ Visual design feedback for WordPress. A floating button lets anyone on the front
 
 - **Click-to-annotate** — click the "Feedback" button, then click any element on the page. The plugin captures the DOM selector, viewport coordinates, viewport dimensions, and form field state automatically.
 - **In-browser screenshots** — uses [html2canvas](https://html2canvas.hertzen.com/) to capture the visible viewport at submission time. Falls back gracefully if offline.
-- **Feedback modal** — collects the visitor's text, name, and email. Pre-fills name/email for logged-in users.
+- **Feedback modal** — collects the visitor's feedback text. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
 - **Local storage** — submissions stored as a `design_feedback` custom post type with full metadata and a screenshot attachment.
 - **Alpaca Issue Tracker integration** — when [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, every submission is automatically mirrored as a Kanban issue on the Alpaca board.
 
@@ -38,7 +38,7 @@ Frontend page
        ▼
   Feedback modal
   • Screenshot thumbnail
-  • Name / email fields (pre-filled if logged in)
+  • Name / email fields (guests only — hidden for logged-in users)
   • Feedback textarea (required)
   • Submit / Cancel
        │
@@ -116,6 +116,10 @@ Open to all visitors (no authentication required). Intended for local/staging us
   "selector":       "header.site-header > .cta-button",
   "xPercent":       "62.3",
   "yPercent":       "18.7",
+  "rectLeft":       "38.5",
+  "rectTop":        "15.2",
+  "rectWidth":      "18.4",
+  "rectHeight":     "6.1",
   "viewportWidth":  1440,
   "viewportHeight": 900,
   "formState":      [{ "index": 0, "id": "contact-form", "fields": { "name": "Alice" } }],
@@ -125,6 +129,8 @@ Open to all visitors (no authentication required). Intended for local/staging us
   "screenshot":     "data:image/jpeg;base64,..."
 }
 ```
+
+`name` and `email` are populated automatically from the submitter's WordPress account when they are logged in — the modal does not display those fields in that case.
 
 **Response:**
 
