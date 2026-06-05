@@ -193,20 +193,16 @@
 		// ── Build UI elements ──────────────────────────────────
 
 		buildButton() {
-			// Tuft puff mark: three overlapping circles (wool tuft / cloud).
-			// Left + centre circles white, right circle sage, inner dot brand coral.
-			const icon =
-				'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 22" width="22" height="16" aria-hidden="true">' +
-				'<circle cx="7" cy="16" r="6.5" fill="white"/>' +
-				'<circle cx="15" cy="13" r="8.5" fill="white"/>' +
-				'<circle cx="23" cy="16" r="6" fill="#9fbe9c"/>' +
-				'<circle cx="14.5" cy="9.5" r="2.5" fill="#e08a7e"/>' +
-				'</svg>';
 			const btn = document.createElement( 'button' );
 			btn.id = 'tuft-trigger';
 			btn.setAttribute( 'aria-label', 'Leave feedback' );
 			btn.title = 'Leave feedback';
-			btn.innerHTML = icon;
+			// PNG from brand kit: coral disc + puff mark at 2× pixel density.
+			const img = document.createElement( 'img' );
+			img.src = settings.buttonImg;
+			img.alt = '';
+			img.setAttribute( 'aria-hidden', 'true' );
+			btn.appendChild( img );
 			return btn;
 		},
 

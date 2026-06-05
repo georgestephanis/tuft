@@ -3,25 +3,41 @@
    ===================================================== */
 
 :root {
-	/* ── Tuft palette ── */
-	--tuft-brand: #e08a7e;           /* Dusty coral  */
-	--tuft-brand-hover: #d47168;     /* Deeper coral */
-	--tuft-sage: #9fbe9c;            /* Sage accent  */
-	--tuft-lilac: #c9b6d9;           /* Lilac        */
-	--tuft-cream: #fbf4ec;           /* Cream        */
-	--tuft-cocoa: #43352f;           /* Cocoa / dark */
-	--tuft-white: #ffffff;
-	--tuft-text: #43352f;
-	--tuft-muted: #8a7670;
-	--tuft-border: #e8ddd4;
-	--tuft-shadow: 0 4px 24px rgba(67, 53, 47, 0.14);
-	--tuft-radius: 10px;
-	--tuft-z-button: 9000;
-	--tuft-z-overlay: 9100;
+	/* ── Tuft palette (matches tokens/tuft-tokens.css from brand kit) ── */
+	--tuft-coral:     #e08a7e; /* Dusty coral — primary brand / action   */
+	--tuft-sage:      #9fbe9c; /* Sage — secondary accent                */
+	--tuft-lilac:     #c9b6d9; /* Lilac — tertiary, use sparingly        */
+	--tuft-cream:     #fbf4ec; /* Cream — warm surface / background      */
+	--tuft-cocoa:     #43352f; /* Cocoa — primary text / ink             */
+	--tuft-coral-600: #cf6f62; /* Darker coral for hover states          */
+	--tuft-hairline:  #ece3d7; /* Subtle warm border                     */
+
+	/* ── Semantic aliases ── */
+	--tuft-brand:       var(--tuft-coral);
+	--tuft-brand-hover: var(--tuft-coral-600);
+	--tuft-white:       #ffffff;
+	--tuft-text:        var(--tuft-cocoa);
+	--tuft-muted:       #7c6f66;
+	--tuft-border:      var(--tuft-hairline);
+
+	/* ── Shadows (from brand kit) ── */
+	--tuft-shadow-fab:  0 12px 22px -8px rgba(224, 138, 126, 0.55);
+	--tuft-shadow-card: 0 24px 48px -36px rgba(67, 53, 47, 0.35);
+	--tuft-shadow:      var(--tuft-shadow-card);
+
+	/* ── Radii (from brand kit) ── */
+	--tuft-radius:    10px; /* sm — inputs, small elements  */
+	--tuft-radius-md: 16px; /* md — modal card              */
+	--tuft-radius-lg: 26px; /* lg — large cards             */
+
+	/* ── Stacking ── */
+	--tuft-z-button:    9000;
+	--tuft-z-overlay:   9100;
 	--tuft-z-highlight: 9200;
-	--tuft-z-modal: 9300;
-	/* System font stack — warm and rounded where available */
-	--tuft-font: ui-rounded, 'Hiragino Maru Gothic ProN', Nunito, Varela Round, system-ui, sans-serif;
+	--tuft-z-modal:     9300;
+
+	/* ── System font stack (no CDN) ── */
+	--tuft-font: ui-rounded, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /* ── Floating trigger button — circle FAB ── */
@@ -35,25 +51,36 @@
 
 	width: 56px;
 	height: 56px;
-	border-radius: 50%;
+	border-radius: 50%; /* shapes the box-shadow to match the disc */
 	padding: 0;
 
 	display: grid;
 	place-items: center;
 
-	background: var(--tuft-brand);
-	color: var(--tuft-white);
+	/* No CSS background — the brand-kit PNG provides the coral disc */
+	background: none;
 	border: none;
 	cursor: pointer;
-	box-shadow: 0 8px 22px -6px rgba(224, 138, 126, 0.7);
-	transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+	box-shadow: var(--tuft-shadow-fab);
+	transition: box-shadow 0.15s ease, transform 0.15s ease;
 	font-family: var(--tuft-font);
 }
 
+#tuft-trigger img {
+	width: 56px;
+	height: 56px;
+	display: block;
+	pointer-events: none;
+}
+
 #tuft-trigger:hover {
-	background: var(--tuft-brand-hover);
-	box-shadow: 0 10px 28px -6px rgba(224, 138, 126, 0.8);
-	transform: translateY(calc(-50% - 3px));
+	box-shadow: 0 16px 28px -8px rgba(224, 138, 126, 0.6);
+	transform: translateY(calc(-50% - 2px));
+}
+
+#tuft-trigger:active {
+	transform: translateY(-50%);
+	box-shadow: var(--tuft-shadow-fab);
 }
 
 /* Tooltip that appears on hover */

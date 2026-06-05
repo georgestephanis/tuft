@@ -68,6 +68,7 @@ function tuft_enqueue_frontend_scripts() {
 			'isLoggedIn' => is_user_logged_in(),
 			'userName'   => (string) $current_user->display_name,
 			'userEmail'  => (string) $current_user->user_email,
+			'buttonImg'  => TUFT_PLUGIN_URL . 'assets/img/fab-button.png',
 		)
 	);
 }
