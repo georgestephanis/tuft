@@ -43,8 +43,8 @@ class Tuft_Post_Type {
 
 		add_submenu_page(
 			'project-board',
-			__( 'Tuft Feedback', 'tuft' ),
-			__( 'Tuft Feedback', 'tuft' ),
+			__( 'Tuft Feedback', 'tuft-feedback' ),
+			__( 'Tuft Feedback', 'tuft-feedback' ),
 			'edit_posts',
 			'edit.php?post_type=tuft_feedback'
 		);
@@ -58,12 +58,12 @@ class Tuft_Post_Type {
 			'tuft_feedback',
 			array(
 				'labels'          => array(
-					'name'               => __( 'Tuft Feedback', 'tuft' ),
-					'singular_name'      => __( 'Feedback Entry', 'tuft' ),
-					'menu_name'          => __( 'Tuft Feedback', 'tuft' ),
-					'all_items'          => __( 'All Feedback', 'tuft' ),
-					'not_found'          => __( 'No feedback submitted yet.', 'tuft' ),
-					'not_found_in_trash' => __( 'No feedback in trash.', 'tuft' ),
+					'name'               => __( 'Tuft Feedback', 'tuft-feedback' ),
+					'singular_name'      => __( 'Feedback Entry', 'tuft-feedback' ),
+					'menu_name'          => __( 'Tuft Feedback', 'tuft-feedback' ),
+					'all_items'          => __( 'All Feedback', 'tuft-feedback' ),
+					'not_found'          => __( 'No feedback submitted yet.', 'tuft-feedback' ),
+					'not_found_in_trash' => __( 'No feedback in trash.', 'tuft-feedback' ),
 				),
 				'public'          => false,
 				'show_ui'         => true,
@@ -100,7 +100,7 @@ class Tuft_Post_Type {
 				<?php
 				printf(
 					/* translators: 1: opening <a> tag, 2: closing </a> tag */
-					esc_html__( 'Want a Kanban board to track and triage these submissions? Install %1$sAlpaca Issue Tracker%2$s — Tuft will automatically forward new submissions to your board.', 'tuft' ),
+					esc_html__( 'Want a Kanban board to track and triage these submissions? Install %1$sAlpaca Issue Tracker%2$s — Tuft will automatically forward new submissions to your board.', 'tuft-feedback' ),
 					'<a href="' . esc_url( $install_url ) . '">',
 					'</a>'
 				);
@@ -119,11 +119,11 @@ class Tuft_Post_Type {
 	public function columns( array $columns ) {
 		return array(
 			'cb'            => $columns['cb'],
-			'title'         => __( 'Feedback', 'tuft' ),
-			'df_page'       => __( 'Page', 'tuft' ),
-			'df_element'    => __( 'Element', 'tuft' ),
-			'df_submitter'  => __( 'Submitted By', 'tuft' ),
-			'df_screenshot' => __( 'Screenshot', 'tuft' ),
+			'title'         => __( 'Feedback', 'tuft-feedback' ),
+			'df_page'       => __( 'Page', 'tuft-feedback' ),
+			'df_element'    => __( 'Element', 'tuft-feedback' ),
+			'df_submitter'  => __( 'Submitted By', 'tuft-feedback' ),
+			'df_screenshot' => __( 'Screenshot', 'tuft-feedback' ),
 			'date'          => $columns['date'],
 		);
 	}
@@ -199,7 +199,7 @@ class Tuft_Post_Type {
 	public function add_meta_box() {
 		add_meta_box(
 			'df-details',
-			__( 'Feedback Details', 'tuft' ),
+			__( 'Feedback Details', 'tuft-feedback' ),
 			array( $this, 'render_meta_box' ),
 			'tuft_feedback',
 			'normal',
@@ -242,7 +242,7 @@ class Tuft_Post_Type {
 		<table class="form-table df-meta-table">
 			<?php if ( $page_url ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Page', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Page', 'tuft-feedback' ); ?></th>
 				<td>
 					<a href="<?php echo esc_url( $page_url ); ?>" target="_blank"><?php echo esc_html( $page_title ? $page_title : $page_url ); ?></a><br>
 					<small><?php echo esc_html( $page_url ); ?></small>
@@ -252,21 +252,21 @@ class Tuft_Post_Type {
 
 			<?php if ( $selector ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Element', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Element', 'tuft-feedback' ); ?></th>
 				<td><code><?php echo esc_html( $selector ); ?></code></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( '' !== $x && '' !== $y ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Click Position', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Click Position', 'tuft-feedback' ); ?></th>
 				<td><?php echo esc_html( $x . '% × ' . $y . '%' ); ?></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( is_array( $rect ) && isset( $rect['left'], $rect['top'], $rect['width'], $rect['height'] ) ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Element Bounds', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Element Bounds', 'tuft-feedback' ); ?></th>
 				<td>
 					<?php
 					echo esc_html(
@@ -280,14 +280,14 @@ class Tuft_Post_Type {
 
 			<?php if ( $vw && $vh ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Viewport', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Viewport', 'tuft-feedback' ); ?></th>
 				<td><?php echo esc_html( $vw . ' × ' . $vh . 'px' ); ?></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( $name || $email ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Submitted By', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Submitted By', 'tuft-feedback' ); ?></th>
 				<td>
 					<?php echo esc_html( $name ); ?>
 					<?php if ( $email ) : ?>
@@ -299,14 +299,14 @@ class Tuft_Post_Type {
 
 			<?php if ( $ua ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'User Agent', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'User Agent', 'tuft-feedback' ); ?></th>
 				<td><small><?php echo esc_html( $ua ); ?></small></td>
 			</tr>
 			<?php endif; ?>
 
 			<?php if ( $form_state ) : ?>
 			<tr>
-				<th><?php esc_html_e( 'Form State', 'tuft' ); ?></th>
+				<th><?php esc_html_e( 'Form State', 'tuft-feedback' ); ?></th>
 				<td><pre style="margin:0;font-size:11px;white-space:pre-wrap;background:#f9f9f9;padding:8px;"><?php echo esc_html( $form_state ); ?></pre></td>
 			</tr>
 			<?php endif; ?>
@@ -319,7 +319,7 @@ class Tuft_Post_Type {
 			$alpaca_post = get_post( $alpaca_id );
 			?>
 			<p style="margin-top:16px;">
-				<strong><?php esc_html_e( 'Alpaca Issue Tracker:', 'tuft' ); ?></strong>
+				<strong><?php esc_html_e( 'Alpaca Issue Tracker:', 'tuft-feedback' ); ?></strong>
 				<a href="<?php echo esc_url( $board_url ); ?>" target="_blank">
 					<?php echo $alpaca_post ? esc_html( $alpaca_post->post_title ) : '#' . (int) $alpaca_id; ?>
 				</a>
@@ -328,7 +328,7 @@ class Tuft_Post_Type {
 		<?php endif; ?>
 
 		<?php if ( $shot_id ) : ?>
-			<h3 style="margin-top:20px;"><?php esc_html_e( 'Screenshot', 'tuft' ); ?></h3>
+			<h3 style="margin-top:20px;"><?php esc_html_e( 'Screenshot', 'tuft-feedback' ); ?></h3>
 			<?php
 			$shot_url = wp_get_attachment_url( $shot_id );
 			echo '<a href="' . esc_url( $shot_url ) . '" target="_blank">';

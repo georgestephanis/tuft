@@ -1,4 +1,4 @@
-=== Tuft ===
+=== Tuft Feedback ===
 Contributors: georgestephanis
 Tags: feedback, design, visual feedback, client review, annotations
 Requires at least: 6.0

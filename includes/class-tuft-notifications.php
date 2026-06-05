@@ -70,11 +70,11 @@ class Tuft_Notifications {
 
 		// Human-readable summary line for services that accept a plain `text` field
 		// (e.g. Slack incoming webhooks).
-		$from    = $name ?: ( $email ?: __( 'Anonymous', 'tuft' ) );
-		$on_page = $page_title ?: $page_url ?: __( 'unknown page', 'tuft' );
+		$from    = $name ?: ( $email ?: __( 'Anonymous', 'tuft-feedback' ) );
+		$on_page = $page_title ?: $page_url ?: __( 'unknown page', 'tuft-feedback' );
 		$text    = sprintf(
 			/* translators: 1: submitter name/email, 2: page title or URL, 3: feedback text */
-			__( 'New feedback from %1$s on "%2$s": %3$s', 'tuft' ),
+			__( 'New feedback from %1$s on "%2$s": %3$s', 'tuft-feedback' ),
 			$from,
 			$on_page,
 			$feedback
@@ -114,27 +114,27 @@ class Tuft_Notifications {
 
 		$subject = sprintf(
 			/* translators: %s: page title or URL */
-			__( '[Tuft] New feedback on "%s"', 'tuft' ),
-			$payload['page_title'] ?: $payload['page_url'] ?: __( 'unknown page', 'tuft' )
+			__( '[Tuft] New feedback on "%s"', 'tuft-feedback' ),
+			$payload['page_title'] ?: $payload['page_url'] ?: __( 'unknown page', 'tuft-feedback' )
 		);
 
 		$lines = array( $payload['feedback'], '' );
 
 		if ( $payload['page_url'] ) {
-			$lines[] = __( 'Page:', 'tuft' ) . ' ' . $payload['page_url'];
+			$lines[] = __( 'Page:', 'tuft-feedback' ) . ' ' . $payload['page_url'];
 		}
 		if ( $payload['selector'] ) {
-			$lines[] = __( 'Element:', 'tuft' ) . ' ' . $payload['selector'];
+			$lines[] = __( 'Element:', 'tuft-feedback' ) . ' ' . $payload['selector'];
 		}
 		if ( $payload['submitter_name'] ) {
-			$lines[] = __( 'From:', 'tuft' ) . ' ' . $payload['submitter_name'];
+			$lines[] = __( 'From:', 'tuft-feedback' ) . ' ' . $payload['submitter_name'];
 		}
 		if ( $payload['submitter_email'] ) {
-			$lines[] = __( 'Email:', 'tuft' ) . ' ' . $payload['submitter_email'];
+			$lines[] = __( 'Email:', 'tuft-feedback' ) . ' ' . $payload['submitter_email'];
 		}
 
 		$lines[] = '';
-		$lines[] = __( 'View in admin:', 'tuft' ) . ' ' . $payload['admin_url'];
+		$lines[] = __( 'View in admin:', 'tuft-feedback' ) . ' ' . $payload['admin_url'];
 
 		wp_mail( $addresses, $subject, implode( "\n", $lines ) );
 	}

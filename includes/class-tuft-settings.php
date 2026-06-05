@@ -39,8 +39,8 @@ class Tuft_Settings {
 	 */
 	public function add_page() {
 		add_options_page(
-			__( 'Tuft Settings', 'tuft' ),
-			__( 'Tuft Feedback', 'tuft' ),
+			__( 'Tuft Settings', 'tuft-feedback' ),
+			__( 'Tuft Feedback', 'tuft-feedback' ),
 			'manage_options',
 			'tuft-settings',
 			array( $this, 'render_page' )
@@ -93,14 +93,14 @@ class Tuft_Settings {
 
 		add_settings_section(
 			'tuft_widget',
-			__( 'Widget visibility', 'tuft' ),
+			__( 'Widget visibility', 'tuft-feedback' ),
 			'__return_false',
 			'tuft-settings'
 		);
 
 		add_settings_field(
 			'tuft_visibility',
-			__( 'Who can see the widget', 'tuft' ),
+			__( 'Who can see the widget', 'tuft-feedback' ),
 			array( $this, 'render_visibility_field' ),
 			'tuft-settings',
 			'tuft_widget'
@@ -108,7 +108,7 @@ class Tuft_Settings {
 
 		add_settings_field(
 			'tuft_rate_limit',
-			__( 'Rate limit', 'tuft' ),
+			__( 'Rate limit', 'tuft-feedback' ),
 			array( $this, 'render_rate_limit_field' ),
 			'tuft-settings',
 			'tuft_widget'
@@ -116,14 +116,14 @@ class Tuft_Settings {
 
 		add_settings_section(
 			'tuft_notifications',
-			__( 'Notifications', 'tuft' ),
+			__( 'Notifications', 'tuft-feedback' ),
 			'__return_false',
 			'tuft-settings'
 		);
 
 		add_settings_field(
 			'tuft_notify_email',
-			__( 'Notify email(s)', 'tuft' ),
+			__( 'Notify email(s)', 'tuft-feedback' ),
 			array( $this, 'render_notify_email_field' ),
 			'tuft-settings',
 			'tuft_notifications'
@@ -131,7 +131,7 @@ class Tuft_Settings {
 
 		add_settings_field(
 			'tuft_webhook_urls',
-			__( 'Webhook URL(s)', 'tuft' ),
+			__( 'Webhook URL(s)', 'tuft-feedback' ),
 			array( $this, 'render_webhook_urls_field' ),
 			'tuft-settings',
 			'tuft_notifications'
@@ -148,17 +148,17 @@ class Tuft_Settings {
 		$counts = $this->get_role_counts();
 
 		$options = array(
-			'everyone'  => __( 'Everyone (logged in and logged out)', 'tuft' ),
-			'logged_in' => __( 'Logged-in users only', 'tuft' ),
+			'everyone'  => __( 'Everyone (logged in and logged out)', 'tuft-feedback' ),
+			'logged_in' => __( 'Logged-in users only', 'tuft-feedback' ),
 			/* translators: %d: approximate number of users with this access level */
-			'editors'   => sprintf( __( 'Editors and above&nbsp;&nbsp;<span class="description">(%d users)</span>', 'tuft' ), $counts['editors'] ),
+			'editors'   => sprintf( __( 'Editors and above&nbsp;&nbsp;<span class="description">(%d users)</span>', 'tuft-feedback' ), $counts['editors'] ),
 			/* translators: %d: approximate number of users with this access level */
-			'admins'    => sprintf( __( 'Administrators only&nbsp;&nbsp;<span class="description">(%d users)</span>', 'tuft' ), $counts['admins'] ),
+			'admins'    => sprintf( __( 'Administrators only&nbsp;&nbsp;<span class="description">(%d users)</span>', 'tuft-feedback' ), $counts['admins'] ),
 		);
 		?>
 		<fieldset>
 			<legend class="screen-reader-text">
-				<?php esc_html_e( 'Who can see the widget', 'tuft' ); ?>
+				<?php esc_html_e( 'Who can see the widget', 'tuft-feedback' ); ?>
 			</legend>
 			<?php foreach ( $options as $option_value => $label ) : ?>
 			<label style="display:block;margin-bottom:6px;">
@@ -178,7 +178,7 @@ class Tuft_Settings {
 			<?php endforeach; ?>
 		</fieldset>
 		<p class="description" style="margin-top:8px;">
-			<?php esc_html_e( 'User counts reflect standard WordPress roles. Custom roles with equivalent capabilities are not included in the count.', 'tuft' ); ?>
+			<?php esc_html_e( 'User counts reflect standard WordPress roles. Custom roles with equivalent capabilities are not included in the count.', 'tuft-feedback' ); ?>
 		</p>
 		<?php
 	}
@@ -199,7 +199,7 @@ class Tuft_Settings {
 			class="small-text"
 		/>
 		<span class="description">
-			<?php esc_html_e( 'Maximum submissions per IP per hour. Set to 0 to disable rate limiting.', 'tuft' ); ?>
+			<?php esc_html_e( 'Maximum submissions per IP per hour. Set to 0 to disable rate limiting.', 'tuft-feedback' ); ?>
 		</span>
 		<?php
 	}
@@ -218,7 +218,7 @@ class Tuft_Settings {
 			placeholder="you@example.com, team@example.com"
 		/>
 		<p class="description">
-			<?php esc_html_e( 'Comma-separated list of addresses to notify when feedback is submitted. Leave blank to disable email notifications.', 'tuft' ); ?>
+			<?php esc_html_e( 'Comma-separated list of addresses to notify when feedback is submitted. Leave blank to disable email notifications.', 'tuft-feedback' ); ?>
 		</p>
 		<?php
 	}
@@ -252,8 +252,8 @@ class Tuft_Settings {
 			placeholder="https://hooks.slack.com/services/…"
 		><?php echo esc_textarea( $value ); ?></textarea>
 		<details>
-			<summary style="cursor:pointer;color:#646970;font-size:13px;"><?php esc_html_e( 'One URL per line. A JSON payload is POSTed to each URL on every submission. Works with Slack incoming webhooks, Discord, Teams, Zapier, Make, or any HTTP endpoint.', 'tuft' ); ?></summary>
-			<p class="description" style="margin:6px 0 4px;"><?php esc_html_e( 'Example payload sent to each webhook URL:', 'tuft' ); ?></p>
+			<summary style="cursor:pointer;color:#646970;font-size:13px;"><?php esc_html_e( 'One URL per line. A JSON payload is POSTed to each URL on every submission. Works with Slack incoming webhooks, Discord, Teams, Zapier, Make, or any HTTP endpoint.', 'tuft-feedback' ); ?></summary>
+			<p class="description" style="margin:6px 0 4px;"><?php esc_html_e( 'Example payload sent to each webhook URL:', 'tuft-feedback' ); ?></p>
 			<pre style="background:#f0f0f1;border-radius:3px;padding:10px 14px;margin:0;font-size:12px;line-height:1.5;white-space:pre;"><?php echo esc_html( $example ); ?></pre>
 		</details>
 		<?php

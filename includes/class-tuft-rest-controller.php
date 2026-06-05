@@ -110,7 +110,7 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 				return new WP_REST_Response(
 					array(
 						'success' => false,
-						'message' => __( 'Too many submissions. Please try again later.', 'tuft' ),
+						'message' => __( 'Too many submissions. Please try again later.', 'tuft-feedback' ),
 					),
 					429
 				);

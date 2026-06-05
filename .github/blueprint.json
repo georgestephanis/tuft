@@ -31,7 +31,7 @@
             },
             "options": {
                 "activate": true,
-                "targetFolderName": "tuft"
+                "targetFolderName": "tuft-feedback"
             }
         },
         {
@@ -42,7 +42,7 @@
         },
         {
             "step": "runPHP",
-            "code": "<?php require '/wordpress/wp-load.php'; include_once WP_PLUGIN_DIR . '/tuft/.github/setup.php';"
+            "code": "<?php require '/wordpress/wp-load.php'; include_once WP_PLUGIN_DIR . '/tuft-feedback/.github/setup.php';"
         }
     ]
 }

@@ -30,7 +30,7 @@
     <rule ref="WordPress.WP.I18n">
         <properties>
             <property name="text_domain" type="array">
-                <element value="tuft"/>
+                <element value="tuft-feedback"/>
             </property>
         </properties>
     </rule>

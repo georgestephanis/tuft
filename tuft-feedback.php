@@ -1,13 +1,13 @@
 <?php
 /**
- * Plugin Name: Tuft
+ * Plugin Name: Tuft Feedback
  * Description: Soft on clients. Sharp on the details. Visual feedback with click-to-annotate and screenshots.
  * Version: 1.1.0
  * Author: George Stephanis
  * Author URI: https://github.com/georgestephanis
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: tuft
+ * Text Domain: tuft-feedback
  * Requires at least: 6.0
  * Requires PHP: 7.4
  *

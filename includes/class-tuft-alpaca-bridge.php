@@ -192,7 +192,7 @@ class Tuft_Alpaca_Bridge {
 		if ( $shot_id ) {
 			$shot_url = wp_get_attachment_url( $shot_id );
 			if ( $shot_url ) {
-				$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'tuft' ) . '" style="max-width:100%;height:auto;display:block;" />';
+				$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'tuft-feedback' ) . '" style="max-width:100%;height:auto;display:block;" />';
 			}
 		}
 
