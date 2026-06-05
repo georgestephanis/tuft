@@ -111,24 +111,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Add crossorigin="anonymous" to all enqueued stylesheets.
+// Inline all local stylesheets to bypass CORS inside the Playground environment.
 add_filter( 'style_loader_tag', 'tuft_playground_style_loader_tag', 10, 4 );
 
 /**
- * Filter the enqueued style tags to add crossorigin="anonymous".
+ * Filter the enqueued style tags to inline local stylesheets.
  *
  * @param string $tag    The link tag.
  * @param string $handle The stylesheet handle.
  * @param string $src    The stylesheet source URL.
  * @param string $media  The stylesheet media attribute.
- * @return string The filtered link tag.
+ * @return string The filtered style tag or raw style tag.
  */
 function tuft_playground_style_loader_tag( $tag, $handle, $src, $media ) {
-	if ( false !== strpos( $src, 'localhost' ) || false !== strpos( $src, '127.0.0.1' ) ) {
-		$rel        = 'rel';
-		$stylesheet = 'stylesheet';
-		$tag        = str_replace( "<link {$rel}='{$stylesheet}'", "<link {$rel}='{$stylesheet}' crossorigin='anonymous'", $tag );
-		$tag        = str_replace( "<link {$rel}=\"{$stylesheet}\"", "<link {$rel}=\"{$stylesheet}\" crossorigin=\"anonymous\"", $tag );
+	if ( false !== strpos( $src, 'localhost' ) || false !== strpos( $src, '127.0.0.1' ) || false !== strpos( $src, 'playground.wordpress.net' ) || '/' === $src[0] ) {
+		$file_path = false;
+		$clean_src = strtok( $src, '?' );
+
+		if ( false !== strpos( $clean_src, '/wp-content/' ) ) {
+			$rel_path  = substr( strstr( $clean_src, '/wp-content/' ), 12 );
+			$file_path = WP_CONTENT_DIR . '/' . $rel_path;
+		} elseif ( false !== strpos( $clean_src, '/wp-includes/' ) ) {
+			$rel_path  = substr( strstr( $clean_src, '/wp-includes/' ), 13 );
+			$file_path = ABSPATH . 'wp-includes/' . $rel_path;
+		}
+
+		if ( $file_path && file_exists( $file_path ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			$css = file_get_contents( $file_path );
+			if ( false !== $css ) {
+				$media_attr = $media ? " media='{$media}'" : '';
+				return "<style id='{$handle}-inline-css'{$media_attr}>\n{$css}\n</style>";
+			}
+		}
 	}
 	return $tag;
 }
