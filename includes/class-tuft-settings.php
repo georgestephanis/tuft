@@ -73,6 +73,16 @@ class Tuft_Settings {
 
 		register_setting(
 			'tuft',
+			'tuft_webhook_urls',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_webhook_urls' ),
+				'default'           => '',
+			)
+		);
+
+		register_setting(
+			'tuft',
 			'tuft_notify_email',
 			array(
 				'type'              => 'string',
@@ -115,6 +125,14 @@ class Tuft_Settings {
 			'tuft_notify_email',
 			__( 'Notify email(s)', 'tuft' ),
 			array( $this, 'render_notify_email_field' ),
+			'tuft-settings',
+			'tuft_notifications'
+		);
+
+		add_settings_field(
+			'tuft_webhook_urls',
+			__( 'Webhook URL(s)', 'tuft' ),
+			array( $this, 'render_webhook_urls_field' ),
 			'tuft-settings',
 			'tuft_notifications'
 		);
@@ -205,6 +223,42 @@ class Tuft_Settings {
 		<?php
 	}
 
+	/**
+	 * Render the webhook URLs textarea.
+	 */
+	public function render_webhook_urls_field() {
+		$value = get_option( 'tuft_webhook_urls', '' );
+
+		$example = wp_json_encode(
+			array(
+				'text'            => 'New feedback from Jane on "About Us": The CTA button is hard to find.',
+				'id'              => 42,
+				'feedback'        => 'The CTA button is hard to find.',
+				'page_url'        => 'https://example.com/about/',
+				'page_title'      => 'About Us',
+				'selector'        => '.hero .cta-button',
+				'submitter_name'  => 'Jane',
+				'submitter_email' => 'jane@example.com',
+				'admin_url'       => 'https://example.com/wp-admin/post.php?post=42&action=edit',
+				'submitted_at'    => '2026-06-05T12:00:00+00:00',
+			),
+			JSON_PRETTY_PRINT
+		);
+		?>
+		<textarea
+			name="tuft_webhook_urls"
+			rows="4"
+			class="large-text code"
+			placeholder="https://hooks.slack.com/services/…"
+		><?php echo esc_textarea( $value ); ?></textarea>
+		<details>
+			<summary style="cursor:pointer;color:#646970;font-size:13px;"><?php esc_html_e( 'One URL per line. A JSON payload is POSTed to each URL on every submission. Works with Slack incoming webhooks, Discord, Teams, Zapier, Make, or any HTTP endpoint.', 'tuft' ); ?></summary>
+			<p class="description" style="margin:6px 0 4px;"><?php esc_html_e( 'Example payload sent to each webhook URL:', 'tuft' ); ?></p>
+			<pre style="background:#f0f0f1;border-radius:3px;padding:10px 14px;margin:0;font-size:12px;line-height:1.5;white-space:pre;"><?php echo esc_html( $example ); ?></pre>
+		</details>
+		<?php
+	}
+
 	// ── Sanitisation ───────────────────────────────────────────
 
 	/**
@@ -215,6 +269,25 @@ class Tuft_Settings {
 	 */
 	public function sanitize_visibility( $value ) {
 		return in_array( $value, self::VISIBILITY_OPTIONS, true ) ? $value : 'logged_in';
+	}
+
+	/**
+	 * Sanitize a newline-separated list of webhook URLs.
+	 * Lines that are not valid URLs are silently dropped.
+	 *
+	 * @param string $value Raw input.
+	 * @return string Cleaned newline-separated URLs.
+	 */
+	public function sanitize_webhook_urls( $value ) {
+		$lines = explode( "\n", (string) $value );
+		$valid = array();
+		foreach ( $lines as $line ) {
+			$url = esc_url_raw( trim( $line ) );
+			if ( $url ) {
+				$valid[] = $url;
+			}
+		}
+		return implode( "\n", $valid );
 	}
 
 	/**

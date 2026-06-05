@@ -26,6 +26,7 @@ require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-post-type.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-settings.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-rest-controller.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-alpaca-bridge.php';
+require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-notifications.php';
 
 /**
  * Enqueue frontend CSS and JS for the feedback widget.
