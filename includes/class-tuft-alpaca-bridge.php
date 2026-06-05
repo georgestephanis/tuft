@@ -9,7 +9,7 @@
  * Structure:
  *   - Issue title   → first ~10 words of the feedback text.
  *   - Issue body    → the feedback text only.
- *   - First comment → context metadata (page, element, coordinates, submitter)
+ *   - First comment → feedback text + context metadata (page, element, coordinates, submitter)
  *                     + an SVG screenshot with a spotlight annotation marking
  *                     the exact click location.
  *
@@ -154,6 +154,8 @@ class Tuft_Alpaca_Bridge {
 		$rect_raw   = get_post_meta( $df_post_id, '_tuft_rect', true );
 		$rect       = $rect_raw ? json_decode( $rect_raw, true ) : null;
 
+		$feedback = get_post_meta( $df_post_id, '_tuft_feedback_text', true );
+
 		// Build the metadata list.
 		$items = array();
 
@@ -179,6 +181,9 @@ class Tuft_Alpaca_Bridge {
 		}
 
 		$content = '';
+		if ( $feedback ) {
+			$content .= '<p>' . wp_kses_post( $feedback ) . '</p>';
+		}
 		if ( ! empty( $items ) ) {
 			$content .= '<ul><li>' . implode( '</li><li>', $items ) . '</li></ul>';
 		}
