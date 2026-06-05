@@ -3,6 +3,7 @@
    ===================================================== */
 
 :root {
+
 	/* ── Tuft palette (matches tokens/tuft-tokens.css from brand kit) ── */
 	--tuft-coral:     #e08a7e; /* Dusty coral — primary brand / action   */
 	--tuft-sage:      #9fbe9c; /* Sage — secondary accent                */
@@ -15,7 +16,7 @@
 	/* ── Semantic aliases ── */
 	--tuft-brand:       var(--tuft-coral);
 	--tuft-brand-hover: var(--tuft-coral-600);
-	--tuft-white:       #ffffff;
+	--tuft-white:       #fff;
 	--tuft-text:        var(--tuft-cocoa);
 	--tuft-muted:       #7c6f66;
 	--tuft-border:      var(--tuft-hairline);
@@ -317,16 +318,16 @@ body.tuft-targeting * {
 	outline: none;
 }
 
-.tuft-field input:focus,
-.tuft-field textarea:focus {
-	border-color: var(--tuft-brand);
-	box-shadow: 0 0 0 3px rgba(224, 138, 126, 0.18);
-}
-
 .tuft-field textarea {
 	resize: vertical;
 	min-height: 100px;
 	line-height: 1.5;
+}
+
+.tuft-field input:focus,
+.tuft-field textarea:focus {
+	border-color: var(--tuft-brand);
+	box-shadow: 0 0 0 3px rgba(224, 138, 126, 0.18);
 }
 
 /* User fields row */

@@ -443,6 +443,7 @@
 				this.annotatePreview( preview, data );
 			} else {
 				preview.classList.remove( 'visible' );
+				preview.style.objectPosition = '';
 			}
 
 			// Element info
@@ -572,8 +573,11 @@
 			const xPct = parseFloat( data.xPercent );
 			const yPct = parseFloat( data.yPercent );
 			if ( isNaN( xPct ) || isNaN( yPct ) ) {
+				preview.style.objectPosition = '';
 				return;
 			}
+
+			preview.style.objectPosition = xPct + '% ' + yPct + '%';
 
 			const img = new Image();
 			img.onload = function () {
