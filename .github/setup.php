@@ -126,7 +126,7 @@ function tuft_playground_cors_workaround() {
 				return;
 			}
 			var scope = scopeMatch[0];
-			var sameOriginBase = window.location.origin + scope;
+			var sameOriginBase = window.location.origin;
 
 			// Rewrite stylesheet links to be same-origin
 			document.querySelectorAll('link[rel="stylesheet"]').forEach(function(link) {
