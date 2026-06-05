@@ -313,9 +313,113 @@ class DF_Post_Type {
 
 		<?php if ( $shot_id ) : ?>
 			<h3 style="margin-top:20px;"><?php esc_html_e( 'Screenshot', 'design-feedback' ); ?></h3>
-			<a href="<?php echo esc_url( wp_get_attachment_url( $shot_id ) ); ?>" target="_blank">
-				<?php echo wp_get_attachment_image( $shot_id, 'large', false, array( 'style' => 'max-width:100%;border:1px solid #ddd;border-radius:3px;' ) ); ?>
-			</a>
+			<?php
+			$shot_url   = wp_get_attachment_url( $shot_id );
+			$has_coords = ( '' !== $x && '' !== $y );
+			?>
+			<?php if ( $has_coords ) : ?>
+				<a href="<?php echo esc_url( $shot_url ); ?>" target="_blank" style="display:block;">
+					<canvas
+						id="df-screenshot-canvas"
+						data-src="<?php echo esc_attr( $shot_url ); ?>"
+						data-x="<?php echo esc_attr( (string) $x ); ?>"
+						data-y="<?php echo esc_attr( (string) $y ); ?>"
+						style="max-width:100%;height:auto;display:block;border:1px solid #ddd;border-radius:3px;cursor:zoom-in;"
+					></canvas>
+				</a>
+				<script>
+				/* Design Feedback: annotate screenshot with click location */
+				( function () {
+					var canvas = document.getElementById( 'df-screenshot-canvas' );
+					if ( ! canvas ) {
+						return;
+					}
+					var ctx  = canvas.getContext( '2d' );
+					var xPct = parseFloat( canvas.dataset.x );
+					var yPct = parseFloat( canvas.dataset.y );
+					var img  = new Image();
+
+					img.onload = function () {
+						canvas.width  = img.naturalWidth;
+						canvas.height = img.naturalHeight;
+
+						ctx.drawImage( img, 0, 0 );
+
+						if ( isNaN( xPct ) || isNaN( yPct ) ) {
+							return;
+						}
+
+						var cx    = ( xPct / 100 ) * canvas.width;
+						var cy    = ( yPct / 100 ) * canvas.height;
+						var spotR = Math.min( canvas.width, canvas.height ) * 0.15;
+
+						/* Dark overlay with circular cutout via even-odd fill */
+						ctx.fillStyle = 'rgba(0,0,0,0.6)';
+						ctx.beginPath();
+						ctx.rect( 0, 0, canvas.width, canvas.height );
+						ctx.arc( cx, cy, spotR, 0, Math.PI * 2, true ); /* counter-clockwise = hole */
+						ctx.fill( 'evenodd' );
+
+						/* Feather the spotlight edge */
+						var feather = ctx.createRadialGradient( cx, cy, spotR * 0.7, cx, cy, spotR * 1.15 );
+						feather.addColorStop( 0, 'rgba(0,0,0,0)' );
+						feather.addColorStop( 1, 'rgba(0,0,0,0.6)' );
+						ctx.fillStyle = feather;
+						ctx.beginPath();
+						ctx.arc( cx, cy, spotR * 1.15, 0, Math.PI * 2 );
+						ctx.fill();
+
+						/* Ring: white outline + red stroke */
+						ctx.beginPath();
+						ctx.arc( cx, cy, 18, 0, Math.PI * 2 );
+						ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+						ctx.lineWidth   = 4;
+						ctx.stroke();
+						ctx.strokeStyle = '#ef4444';
+						ctx.lineWidth   = 2;
+						ctx.stroke();
+
+						/* Crosshair arms (outside the ring) */
+						var gap = 22, arm = 14;
+						ctx.beginPath();
+						ctx.moveTo( cx - gap - arm, cy ); ctx.lineTo( cx - gap, cy );
+						ctx.moveTo( cx + gap,        cy ); ctx.lineTo( cx + gap + arm, cy );
+						ctx.moveTo( cx, cy - gap - arm ); ctx.lineTo( cx, cy - gap );
+						ctx.moveTo( cx, cy + gap        ); ctx.lineTo( cx, cy + gap + arm );
+						ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+						ctx.lineWidth   = 3;
+						ctx.stroke();
+						ctx.strokeStyle = '#ef4444';
+						ctx.lineWidth   = 1.5;
+						ctx.stroke();
+
+						/* Centre dot: red with white core */
+						ctx.fillStyle = '#ef4444';
+						ctx.beginPath();
+						ctx.arc( cx, cy, 4, 0, Math.PI * 2 );
+						ctx.fill();
+						ctx.fillStyle = 'white';
+						ctx.beginPath();
+						ctx.arc( cx, cy, 2, 0, Math.PI * 2 );
+						ctx.fill();
+					};
+
+					img.onerror = function () {
+						/* Canvas draw failed — fall back to a plain img */
+						var fallback   = document.createElement( 'img' );
+						fallback.src   = canvas.dataset.src;
+						fallback.style.cssText = canvas.style.cssText;
+						canvas.parentNode.replaceChild( fallback, canvas );
+					};
+
+					img.src = canvas.dataset.src;
+				} )();
+				</script>
+			<?php else : ?>
+				<a href="<?php echo esc_url( $shot_url ); ?>" target="_blank">
+					<?php echo wp_get_attachment_image( $shot_id, 'large', false, array( 'style' => 'max-width:100%;border:1px solid #ddd;border-radius:3px;' ) ); ?>
+				</a>
+			<?php endif; ?>
 		<?php endif; ?>
 		<?php
 	}
