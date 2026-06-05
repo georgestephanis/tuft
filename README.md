@@ -7,7 +7,7 @@ Visual design feedback for WordPress. A floating button lets anyone on the front
 ## Features
 
 - **Click-to-annotate** — click the "Feedback" button, then click any element on the page. The plugin captures the DOM selector, viewport coordinates, viewport dimensions, and form field state automatically.
-- **In-browser screenshots** — uses [html2canvas](https://html2canvas.hertzen.com/) to capture the visible viewport at submission time. Falls back gracefully if offline.
+- **In-browser screenshots** — uses [html2canvas](https://html2canvas.hertzen.com/) (bundled locally, no CDN dependency) to capture the visible viewport at submission time.
 - **Feedback modal** — collects the visitor's feedback text. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
 - **Local storage** — submissions stored as a `design_feedback` custom post type with full metadata and a screenshot attachment.
 - **Alpaca Issue Tracker integration** — when [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, every submission is automatically mirrored as a Kanban issue on the Alpaca board.
@@ -33,7 +33,7 @@ Frontend page
   • Click coordinates (% of viewport)
   • Viewport dimensions
   • Form field values (excluding passwords)
-  • html2canvas screenshot of visible viewport
+  • html2canvas screenshot of visible viewport (bundled, always available)
        │
        ▼
   Feedback modal
@@ -183,6 +183,8 @@ The `/submit` REST endpoint uses `__return_true` as its permission callback, mak
 ```
 
 Screenshots are stored as JPEG media attachments. Base64 data is decoded server-side and written to the uploads directory via `file_put_contents`. Validate upload directory permissions in hardened environments.
+
+html2canvas is bundled in `assets/js/vendor/html2canvas.min.js` and served directly from the plugin — no CDN dependency. To update it: bump the version in `package.json`, run `npm install`, and the `postinstall` hook copies the new file automatically.
 
 ---
 

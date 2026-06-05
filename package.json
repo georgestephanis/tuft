@@ -4,11 +4,14 @@
   "description": "Visual design feedback with click-to-annotate and screenshots.",
   "private": true,
   "scripts": {
+    "copy-vendor": "cp node_modules/html2canvas/dist/html2canvas.min.js assets/js/vendor/html2canvas.min.js",
+    "postinstall": "npm run copy-vendor",
     "lint:js": "wp-scripts lint-js assets/js",
     "lint:css": "wp-scripts lint-style assets/css",
     "lint": "npm run lint:js && npm run lint:css"
   },
   "devDependencies": {
-    "@wordpress/scripts": "^30.0.0"
+    "@wordpress/scripts": "^30.0.0",
+    "html2canvas": "^1.4.1"
   }
 }

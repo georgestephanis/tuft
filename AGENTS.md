@@ -33,7 +33,7 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 | File | Purpose |
 |------|---------|
-| `package.json` | `@wordpress/scripts` dev dependency; `lint:js`, `lint:css`, and `lint` scripts |
+| `package.json` | `@wordpress/scripts` + `html2canvas` dev dependencies; `lint:js`, `lint:css`, `lint`, `copy-vendor`, and `postinstall` scripts |
 | `composer.json` | `squizlabs/php_codesniffer`, `wp-coding-standards/wpcs`, installer; `phpcs`/`phpcbf` scripts |
 | `phpcs.xml` | WordPress-Extra + WordPress-Docs ruleset, `df`/`DF` prefix, `design-feedback` text domain |
 | `.eslintrc.json` | Extends `@wordpress/eslint-plugin/recommended`; declares `dfSettings`/`html2canvas` globals |
@@ -174,5 +174,5 @@ Use this hook to integrate with other systems without modifying the REST control
 - The `/submit` endpoint uses `permission_callback => '__return_true'` intentionally — this plugin is for local/staging use. Add `current_user_can()` checks before deploying to production.
 - The Alpaca bridge must never hard-depend on Alpaca functions: always guard with `function_exists()` or `post_type_exists()` before calling.
 - Do not modify `alpaca-issue-tracker` files; interact with it only through its public functions, filters, and the `alpaca_default_status` / `alpaca_user_can` filter hooks.
-- `html2canvas` is loaded from a CDN. Do not bundle it or switch CDNs without testing that `ignoreElements` (used to exclude our own UI) still works.
+- `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — do not reintroduce a CDN dependency. To upgrade: bump the version in `package.json` and run `npm install` (the `postinstall` hook copies the new file). Test that the `ignoreElements` option (used to exclude the plugin's own UI from screenshots) still works after any upgrade.
 - PHP class files must be named after the class with `class-` prepended and underscores converted to dashes, prefixed with `df-`: e.g. `DF_Post_Type` → `class-df-post-type.php`.

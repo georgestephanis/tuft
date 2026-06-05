@@ -38,10 +38,10 @@ function df_enqueue_frontend_scripts() {
 		DF_VERSION
 	);
 
-	// html2canvas for in-browser screenshots; gracefully absent if offline.
+	// html2canvas bundled locally — no CDN dependency.
 	wp_enqueue_script(
 		'html2canvas',
-		'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js',
+		DF_PLUGIN_URL . 'assets/js/vendor/html2canvas.min.js',
 		array(),
 		'1.4.1',
 		true

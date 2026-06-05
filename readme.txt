@@ -17,7 +17,7 @@ Design Feedback adds a floating button to every page on your site. When clicked,
 = Key features =
 
 * **Click-to-annotate** — click the "Feedback" button then click any element. The hovered element highlights so you know exactly what you're selecting.
-* **In-browser screenshots** — uses html2canvas to capture the visible viewport at the moment of submission. Gracefully skipped if the CDN is unreachable.
+* **In-browser screenshots** — uses html2canvas (bundled with the plugin, no CDN dependency) to capture the visible viewport at the moment of submission.
 * **Context capture** — records the CSS selector, viewport-relative click coordinates, viewport dimensions, and any visible form field values (passwords excluded).
 * **Feedback modal** — clean overlay collects the visitor's feedback text. Logged-in users are not prompted for name or email — their WordPress account details are used automatically. Guest visitors see name and email fields.
 * **Local storage** — submissions saved as a `design_feedback` custom post type with full metadata and a screenshot attachment.
@@ -60,7 +60,7 @@ In the WordPress database as a custom post type (`design_feedback`). You can rev
 
 = Do screenshots always work? =
 
-Screenshots rely on [html2canvas](https://html2canvas.hertzen.com/) loaded from the unpkg CDN. If the page is on a server that blocks outbound requests to the CDN, or if the submitter is offline, the screenshot step is silently skipped and the rest of the submission proceeds normally.
+html2canvas is bundled with the plugin and served directly from `assets/js/vendor/` — there is no CDN dependency. Screenshots should work in any environment. The only case where a screenshot may be absent is very old browsers that do not support the Canvas API, which is vanishingly rare in practice.
 
 = Can I send submissions somewhere else? =
 
