@@ -428,13 +428,14 @@
 			submitBtn.disabled = false;
 			submitBtn.textContent = 'Submit Feedback';
 
-			// Screenshot preview
+			// Screenshot preview — annotated with spotlight and element bounds.
 			const preview = this.backdrop.querySelector(
 				'#df-screenshot-preview'
 			);
 			if ( data.screenshot ) {
 				preview.src = data.screenshot;
 				preview.classList.add( 'visible' );
+				this.annotatePreview( preview, data );
 			} else {
 				preview.classList.remove( 'visible' );
 			}
@@ -549,6 +550,125 @@
 					submitBtn.disabled = false;
 					submitBtn.textContent = 'Submit Feedback';
 				} );
+		},
+
+		/**
+		 * Draw a spotlight annotation onto the screenshot preview.
+		 *
+		 * Mirrors the visual produced by DF_SVG_Annotation::build() on the PHP side:
+		 * dark overlay with a circular spotlight cutout, a dashed element bounding box,
+		 * and a ring-and-crosshair marker at the exact click point.
+		 * The annotated result replaces the plain screenshot src on the preview <img>.
+		 *
+		 * @param {HTMLImageElement} preview The preview img element.
+		 * @param {Object}           data    Captured data from onTargetClick.
+		 */
+		annotatePreview( preview, data ) {
+			const xPct = parseFloat( data.xPercent );
+			const yPct = parseFloat( data.yPercent );
+			if ( isNaN( xPct ) || isNaN( yPct ) ) {
+				return;
+			}
+
+			const img = new Image();
+			img.onload = function () {
+				const w = img.naturalWidth;
+				const h = img.naturalHeight;
+				const canvas = document.createElement( 'canvas' );
+				canvas.width = w;
+				canvas.height = h;
+				const ctx = canvas.getContext( '2d' );
+
+				ctx.drawImage( img, 0, 0 );
+
+				const cx = ( xPct / 100 ) * w;
+				const cy = ( yPct / 100 ) * h;
+				const spotR = Math.min( w, h ) * 0.15;
+
+				// Dark overlay with circular spotlight cutout (even-odd fill).
+				ctx.fillStyle = 'rgba(0,0,0,0.6)';
+				ctx.beginPath();
+				ctx.rect( 0, 0, w, h );
+				ctx.arc( cx, cy, spotR, 0, Math.PI * 2, true );
+				ctx.fill( 'evenodd' );
+
+				// Element bounding box: two-pass dashed rect matching the SVG style.
+				const rl = parseFloat( data.rectLeft );
+				const rt = parseFloat( data.rectTop );
+				const rw = parseFloat( data.rectWidth );
+				const rh = parseFloat( data.rectHeight );
+				if (
+					! isNaN( rl ) &&
+					! isNaN( rt ) &&
+					! isNaN( rw ) &&
+					! isNaN( rh )
+				) {
+					const rx = ( rl / 100 ) * w;
+					const ry = ( rt / 100 ) * h;
+					const rW = ( rw / 100 ) * w;
+					const rH = ( rh / 100 ) * h;
+
+					ctx.setLineDash( [ 8, 4 ] );
+					ctx.lineDashOffset = 0;
+					ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+					ctx.lineWidth = 2.5;
+					ctx.strokeRect( rx, ry, rW, rH );
+
+					ctx.lineDashOffset = 4;
+					ctx.strokeStyle = '#fbbf24';
+					ctx.lineWidth = 1.5;
+					ctx.strokeRect( rx, ry, rW, rH );
+
+					ctx.setLineDash( [] );
+					ctx.lineDashOffset = 0;
+				}
+
+				// Ring: white halo then red stroke.
+				ctx.beginPath();
+				ctx.arc( cx, cy, 18, 0, Math.PI * 2 );
+				ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+				ctx.lineWidth = 4;
+				ctx.stroke();
+				ctx.strokeStyle = '#ef4444';
+				ctx.lineWidth = 2;
+				ctx.stroke();
+
+				// Crosshair arms — white pass then red pass.
+				const gap = 22,
+					arm = 14;
+				const arms = [
+					[ cx - gap - arm, cy, cx - gap, cy ],
+					[ cx + gap, cy, cx + gap + arm, cy ],
+					[ cx, cy - gap - arm, cx, cy - gap ],
+					[ cx, cy + gap, cx, cy + gap + arm ],
+				];
+				[
+					[ 'rgba(255,255,255,0.9)', 3 ],
+					[ '#ef4444', 1.5 ],
+				].forEach( function ( [ color, width ] ) {
+					ctx.strokeStyle = color;
+					ctx.lineWidth = width;
+					arms.forEach( function ( [ x1, y1, x2, y2 ] ) {
+						ctx.beginPath();
+						ctx.moveTo( x1, y1 );
+						ctx.lineTo( x2, y2 );
+						ctx.stroke();
+					} );
+				} );
+
+				// Centre dot: red with white core.
+				ctx.fillStyle = '#ef4444';
+				ctx.beginPath();
+				ctx.arc( cx, cy, 4, 0, Math.PI * 2 );
+				ctx.fill();
+				ctx.fillStyle = 'white';
+				ctx.beginPath();
+				ctx.arc( cx, cy, 2, 0, Math.PI * 2 );
+				ctx.fill();
+
+				preview.src = canvas.toDataURL( 'image/jpeg', 0.85 );
+			};
+			img.src = data.screenshot;
 		},
 
 		showSuccess() {
