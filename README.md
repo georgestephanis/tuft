@@ -12,7 +12,7 @@ Visual design feedback for WordPress. A floating button lets anyone on the front
 
 - **Click-to-annotate** — click the "Feedback" button, then click any element on the page. The plugin captures the DOM selector, viewport coordinates, viewport dimensions, and form field state automatically.
 - **In-browser screenshots** — uses [html2canvas](https://html2canvas.hertzen.com/) (bundled locally, no CDN dependency) to capture the visible viewport at submission time.
-- **Feedback modal** — collects the visitor's feedback text. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
+- **Feedback modal** — collects the visitor's feedback text. Features an annotated screenshot preview that dynamically centers its crop focal point around your click coordinates (via CSS `object-position`), ensuring the target element is never cropped out of view. Logged-in users are not prompted for name or email — their account details are used automatically. Guest visitors see name and email fields.
 - **Local storage** — submissions stored as a `tuft_feedback` custom post type with full metadata and a screenshot attachment.
 - **Alpaca Issue Tracker integration** — when [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, every submission is automatically mirrored as a Kanban issue on the Alpaca board.
 
@@ -207,6 +207,14 @@ The `/submit` REST endpoint uses `__return_true` as its permission callback, mak
 Screenshots are stored as JPEG media attachments. Base64 data is decoded server-side and written to the uploads directory via `file_put_contents`. Validate upload directory permissions in hardened environments.
 
 html2canvas is bundled in `assets/js/vendor/html2canvas.min.js` and served directly from the plugin — no CDN dependency. To update it: bump the version in `package.json`, run `npm install`, and the `postinstall` hook copies the new file automatically.
+
+---
+
+## WordPress Playground CORS Workaround
+
+When running inside the [WordPress Playground](https://playground.wordpress.net/) WASM environment, the Service Worker routing and asset loading rules cause enqueued stylesheets to trigger browser cross-origin (CORS) blocks during screenshot generation. This prevents `html2canvas` from reading `sheet.cssRules` and results in unstyled screenshots.
+
+To resolve this, the demo setup script ([.github/setup.php](.github/setup.php)) writes a Must-Use plugin (`tuft-playground-cors.php`) that hooks into `style_loader_tag`. It dynamically reads local stylesheet assets from the WASM virtual filesystem and returns them as inline `<style>` blocks. This converts cross-origin CSS links into same-origin style tags, allowing `html2canvas` to render screenshots fully styled.
 
 ---
 

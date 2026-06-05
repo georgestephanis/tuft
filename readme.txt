@@ -19,7 +19,7 @@ Tuft adds a floating button to every page on your site. When clicked, it enters 
 * **Click-to-annotate** — click the "Feedback" button then click any element. The hovered element highlights so you know exactly what you're selecting.
 * **In-browser screenshots** — uses html2canvas (bundled with the plugin, no CDN dependency) to capture the visible viewport at the moment of submission.
 * **Context capture** — records the CSS selector, viewport-relative click coordinates, viewport dimensions, and any visible form field values (passwords excluded).
-* **Feedback modal** — clean overlay collects the visitor's feedback text. Logged-in users are not prompted for name or email — their WordPress account details are used automatically. Guest visitors see name and email fields.
+* **Feedback modal** — clean overlay collects the visitor's feedback text. Features a screenshot preview that dynamically centers its crop focal point around your click coordinates, ensuring the target element is never cropped out of view. Logged-in users are not prompted for name or email — their WordPress account details are used automatically. Guest visitors see name and email fields.
 * **Local storage** — submissions saved as a `tuft_feedback` custom post type with full metadata and a screenshot attachment.
 * **Admin review** — list table with columns for feedback text, source page, element selector, submitter, and screenshot thumbnail. Full detail view with screenshot in the post editor.
 * **Alpaca Issue Tracker integration** — if [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/) is installed, each submission is automatically mirrored as a Kanban issue on the Alpaca board. The Tuft admin menu moves under the Alpaca Project Board menu.
@@ -60,7 +60,9 @@ In the WordPress database as a custom post type (`tuft_feedback`). You can revie
 
 = Do screenshots always work? =
 
-html2canvas is bundled with the plugin and served directly from `assets/js/vendor/` — there is no CDN dependency. Screenshots should work in any environment. The only case where a screenshot may be absent is very old browsers that do not support the Canvas API, which is vanishingly rare in practice.
+html2canvas is bundled with the plugin and served directly from `assets/js/vendor/` — there is no CDN dependency. Screenshots should work in any environment.
+
+In sandboxed environments like WordPress Playground where enqueued stylesheets suffer from cross-origin/CORS restrictions, a built-in Playground helper dynamically inlines stylesheets as `<style>` blocks. This allows html2canvas to access style rules without triggering browser security blocks, ensuring screenshots render fully styled. The only case where a screenshot may be absent is very old browsers that do not support the Canvas API, which is vanishingly rare in practice.
 
 = Can I send submissions somewhere else? =
 

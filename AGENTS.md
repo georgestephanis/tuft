@@ -67,7 +67,7 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
    - Exits targeting mode, waits two `requestAnimationFrame` ticks for the overlay to repaint away
    - Calls `html2canvas` on `document.documentElement` (visible viewport only); bundled locally so always available
    - Opens the feedback modal
-4. Modal opens with an annotated screenshot preview (`DF.annotatePreview()`): draws the screenshot onto a canvas with a spotlight cutout, optional dashed bounding-box rect, and crosshair/ring marker at the click point — matching the SVG produced server-side by `Tuft_SVG_Annotation`. The annotated JPEG replaces the plain thumbnail src.
+4. Modal opens with an annotated screenshot preview (`DF.annotatePreview()`): sets the `<img>` element's `object-position` styling using the click's percentage coordinates (`xPercent`, `yPercent`) to center the crop focal point on the selected target. It then draws the screenshot onto a canvas with a spotlight cutout, optional dashed bounding-box rect, and crosshair/ring marker at the click point — matching the SVG produced server-side by `Tuft_SVG_Annotation`. The annotated JPEG replaces the plain thumbnail src.
 5. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `tuftSettings` and submitted automatically without prompting.
 6. Modal submit → `fetch( tuftSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
 7. On success: shows a thank-you message, auto-closes after 2.5 s
@@ -80,6 +80,7 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 - Form state capture skips `type=password`, `type=hidden`, `type=submit`, and `type=button` fields.
 - `getSelector()` walks up the DOM up to 5 levels, preferring `#id` anchors and appending `:nth-of-type()` when siblings share the same tag.
 - `ignoreElements` in the `html2canvas` call skips any element whose `id` starts with `tuft-`, preventing the plugin's own UI from appearing in screenshots.
+- Setting `preview.style.objectPosition` on `img#tuft-screenshot-preview` ensures that the browser's `object-fit: cover` crop centers on the annotated focal point rather than defaults to the page top. It is reset to an empty string inside `openModal` when no screenshot is available.
 
 ---
 
@@ -166,6 +167,14 @@ The standard CPT list table and post-edit screen (the expanded detail view with 
 ### Install-Alpaca notice
 
 `Tuft_Post_Type::maybe_suggest_alpaca()` (hooked to `admin_notices`) shows a dismissible info notice on the Tuft list screen (`edit-tuft_feedback`) when Alpaca is **not** installed. The notice links to the Alpaca plugin-install page in wp-admin and is silently skipped when Alpaca is already active.
+
+---
+
+## WordPress Playground Workaround
+
+When loaded in the WASM [WordPress Playground](https://playground.wordpress.net/) environment, CORS and Service Worker constraints prevent `html2canvas` from accessing enqueued external stylesheets (causing screenshots to render unstyled).
+
+To resolve this, the Playground blueprint setup script ([.github/setup.php](.github/setup.php)) writes a Must-Use plugin (`tuft-playground-cors.php`) that hooks into the `style_loader_tag` filter. When a stylesheet handle matches `localhost`, `127.0.0.1`, `playground.wordpress.net`, or root-relative paths, it reads the CSS content from the WASM virtual filesystem and returns it as an inline `<style>` tag, converting the link to same-origin.
 
 ---
 
