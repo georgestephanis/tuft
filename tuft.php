@@ -23,6 +23,7 @@ define( 'TUFT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'TUFT_VERSION', '1.0.0' );
 
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-post-type.php';
+require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-settings.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-rest-controller.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-alpaca-bridge.php';
 
@@ -30,6 +31,23 @@ require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-alpaca-bridge.php';
  * Enqueue frontend CSS and JS for the feedback widget.
  */
 function tuft_enqueue_frontend_scripts() {
+	$visibility = Tuft_Settings::get_visibility();
+	if ( 'everyone' === $visibility ) {
+		// No restriction — show to all visitors.
+	} elseif ( 'logged_in' === $visibility ) {
+		if ( ! is_user_logged_in() ) {
+			return;
+		}
+	} elseif ( 'editors' === $visibility ) {
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return;
+		}
+	} elseif ( 'admins' === $visibility ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+	}
+
 	wp_enqueue_style(
 		'tuft',
 		TUFT_PLUGIN_URL . 'assets/css/feedback.css',

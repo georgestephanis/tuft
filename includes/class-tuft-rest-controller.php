@@ -82,6 +82,41 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function submit( WP_REST_Request $request ) {
+		$submitter_ip = $this->get_submitter_ip();
+
+		// Rate limiting — count existing submissions from this IP in the past hour.
+		$limit = absint( get_option( 'tuft_rate_limit', 5 ) );
+		if ( $limit > 0 ) {
+			$recent = new WP_Query(
+				array(
+					'post_type'      => 'tuft_feedback',
+					'post_status'    => 'publish',
+					'posts_per_page' => $limit,
+					'fields'         => 'ids',
+					'no_found_rows'  => true,
+					'date_query'     => array(
+						array( 'after' => '1 hour ago' ),
+					),
+					'meta_query'     => array(
+						array(
+							'key'   => '_tuft_submitter_ip',
+							'value' => $submitter_ip,
+						),
+					),
+				)
+			);
+
+			if ( count( $recent->posts ) >= $limit ) {
+				return new WP_REST_Response(
+					array(
+						'success' => false,
+						'message' => __( 'Too many submissions. Please try again later.', 'tuft' ),
+					),
+					429
+				);
+			}
+		}
+
 		$feedback    = $request->get_param( 'feedback' );
 		$page_url    = $request->get_param( 'pageUrl' ) ?? '';
 		$page_title  = $request->get_param( 'pageTitle' ) ?? '';
@@ -141,6 +176,7 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 			'_tuft_submitter_name'  => $name,
 			'_tuft_submitter_email' => $email,
 			'_tuft_user_agent'      => $user_agent,
+			'_tuft_submitter_ip'    => $submitter_ip,
 		);
 
 		foreach ( $meta_map as $key => $value ) {
@@ -233,6 +269,33 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 		require_once ABSPATH . 'wp-admin/includes/image.php';
 		wp_update_attachment_metadata( $attachment_id, wp_generate_attachment_metadata( $attachment_id, $filepath ) );
 		update_post_meta( $post_id, '_tuft_screenshot_id', $attachment_id );
+	}
+
+	/**
+	 * Return the most likely real IP for the current request.
+	 *
+	 * Checks X-Forwarded-For first (common on load-balanced hosts) and falls
+	 * back to REMOTE_ADDR. The first address in XFF is taken as the client IP;
+	 * if it is not a valid IP, REMOTE_ADDR is used instead.
+	 *
+	 * @return string IP address string, or '0.0.0.0' as a last resort.
+	 */
+	private function get_submitter_ip() {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$forwarded = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) )
+			: '';
+
+		if ( $forwarded ) {
+			$first = trim( explode( ',', $forwarded )[0] );
+			if ( filter_var( $first, FILTER_VALIDATE_IP ) ) {
+				return $first;
+			}
+		}
+
+		return isset( $_SERVER['REMOTE_ADDR'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
+			: '0.0.0.0';
 	}
 }
 
