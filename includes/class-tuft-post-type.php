@@ -43,8 +43,8 @@ class Tuft_Post_Type {
 
 		add_submenu_page(
 			'project-board',
-			__( 'Tuft', 'tuft' ),
-			__( 'Tuft', 'tuft' ),
+			__( 'Tuft Feedback', 'tuft' ),
+			__( 'Tuft Feedback', 'tuft' ),
 			'edit_posts',
 			'edit.php?post_type=tuft_feedback'
 		);
@@ -58,9 +58,9 @@ class Tuft_Post_Type {
 			'tuft_feedback',
 			array(
 				'labels'          => array(
-					'name'               => __( 'Tuft', 'tuft' ),
+					'name'               => __( 'Tuft Feedback', 'tuft' ),
 					'singular_name'      => __( 'Feedback Entry', 'tuft' ),
-					'menu_name'          => __( 'Tuft', 'tuft' ),
+					'menu_name'          => __( 'Tuft Feedback', 'tuft' ),
 					'all_items'          => __( 'All Feedback', 'tuft' ),
 					'not_found'          => __( 'No feedback submitted yet.', 'tuft' ),
 					'not_found_in_trash' => __( 'No feedback in trash.', 'tuft' ),
