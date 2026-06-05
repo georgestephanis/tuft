@@ -121,7 +121,7 @@ function tuft_playground_cors_workaround() {
 	<script id="tuft-playground-cors-workaround">
 	(function() {
 		function fixPlaygroundAssets() {
-			var scopeMatch = window.location.pathname.match(/^\/scope\/([^/]+)/);
+			var scopeMatch = window.location.pathname.match(/^\/scope[:/]([^/]+)/);
 			if (!scopeMatch) {
 				return;
 			}
