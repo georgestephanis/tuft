@@ -19,7 +19,7 @@ Visual design feedback for WordPress. A floating button lets anyone on the front
 ```
 Frontend page
   │
-  └─ Fixed "Feedback" button (right edge of screen)
+  └─ Circle FAB button (~2/3 down the right edge of the screen)
        │
        ▼ click
   Targeting mode
@@ -88,7 +88,7 @@ Install [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracke
 When both plugins are active:
 
 - Each submission automatically creates a matching `alpaca_issue`.
-- The issue body contains the feedback text plus a context block (page, element, coordinates, viewport, submitter).
+- The issue body contains the feedback text. A first `issuecomment` holds the full context: feedback text, metadata (page, element, coordinates, viewport, submitter), and an SVG-annotated screenshot with spotlight and crosshair marker.
 - The issue is placed at the top of the lowest-score column (your "inbox" column).
 - The issue is tagged with the submitter's browser and type `Tuft`.
 - Both posts are cross-referenced: the `tuft_feedback` post stores the Alpaca issue ID, and the Alpaca issue stores the `tuft_feedback` post ID.
@@ -166,8 +166,26 @@ add_action( 'tuft_feedback_submitted', function ( int $post_id ) {
 
 1. Place the plugin in `wp-content/plugins/tuft/`.
 2. Activate **Tuft**.
-3. Visit any frontend page — the "Feedback" button appears on the right edge of the screen.
+3. Visit any frontend page — the Tuft FAB button appears ~2/3 down the right edge of the screen.
 4. Optionally install and activate **Alpaca Issue Tracker** for board-based triage.
+
+---
+
+## Brand assets
+
+The Tuft brand kit lives in two places within the plugin:
+
+| Path | Purpose |
+|------|---------|
+| `assets/img/fab-button.png` | FAB button face (coral disc + puff mark, 2× density). Served to the frontend; URL passed to JS via `tuftSettings.buttonImg`. |
+| `assets/wporg/icon-128x128.png` | WordPress.org directory icon (128 px) |
+| `assets/wporg/icon-256x256.png` | WordPress.org directory icon @2× |
+| `assets/wporg/banner-772x250.png` | WordPress.org directory banner |
+| `assets/wporg/banner-1544x500.png` | WordPress.org directory banner @2× |
+
+**WordPress.org deployment:** the `assets/wporg/` files belong in the SVN `assets/` directory *outside* the plugin zip (sibling to `trunk/`). Copy them there before publishing.
+
+**Palette:** Dusty coral `#e08a7e` · Sage `#9fbe9c` · Lilac `#c9b6d9` · Cream `#fbf4ec` · Cocoa `#43352f`. Full CSS custom property tokens are in the brand kit at `tokens/tuft-tokens.css`.
 
 ---
 

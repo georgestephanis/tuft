@@ -35,37 +35,51 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 |------|---------|
 | `package.json` | `@wordpress/scripts` + `html2canvas` dev dependencies; `lint:js`, `lint:css`, `lint`, `copy-vendor`, and `postinstall` scripts |
 | `composer.json` | `squizlabs/php_codesniffer`, `wp-coding-standards/wpcs`, installer; `phpcs`/`phpcbf` scripts |
-| `phpcs.xml` | WordPress-Extra + WordPress-Docs ruleset, `df`/`DF` prefix, `tuft` text domain |
+| `phpcs.xml` | WordPress-Extra + WordPress-Docs ruleset, `tuft`/`Tuft` prefix, `tuft` text domain |
 | `.eslintrc.json` | Extends `@wordpress/eslint-plugin/recommended`; declares `tuftSettings`/`html2canvas` globals |
 | `.stylelintrc.json` | Extends `@wordpress/stylelint-config`; disables `declaration-no-important` (intentional for targeting cursor) |
 | `.eslintignore` | Excludes `vendor/` and `node_modules/` from ESLint |
+
+### Brand assets
+
+| Path | Purpose |
+|------|---------|
+| `assets/img/fab-button.png` | FAB button face served to the frontend — coral disc + puff mark at 2× pixel density. URL passed to JS via `tuftSettings.buttonImg`. |
+| `assets/wporg/icon-128x128.png` | WordPress.org plugin directory icon (128 px) |
+| `assets/wporg/icon-256x256.png` | WordPress.org plugin directory icon @2× |
+| `assets/wporg/banner-772x250.png` | WordPress.org plugin directory banner |
+| `assets/wporg/banner-1544x500.png` | WordPress.org plugin directory banner @2× |
+
+> **Deployment note:** WordPress.org expects banner and icon files in the SVN `assets/` directory *outside* the plugin zip (sibling to `trunk/`). Copy `assets/wporg/*` there before publishing.
 
 ---
 
 ## Frontend JS flow
 
-1. `DF.init()` — builds and appends the floating button, overlay, highlight box, and modal to `document.body`.
+1. `DF.init()` — builds and appends the floating button, overlay, highlight box, and modal to `document.body`. The button is a circle FAB (`#tuft-trigger`) positioned 2/3 down the right edge of the viewport; its face is `<img src="tuftSettings.buttonImg">` (the brand-kit PNG served from `assets/img/fab-button.png`).
 2. Button click → `DF.enterTargeting()`:
-   - Adds `body.df-targeting` (CSS crosshair cursor on everything)
+   - Adds `body.tuft-targeting` (CSS crosshair cursor on everything)
    - Shows the dimmed overlay (purely visual, `pointer-events: none`)
    - Registers capture-phase `mouseover` (highlight update) and `click` (capture) listeners on `document`
 3. Click in targeting mode → `DF.onTargetClick()`:
    - `preventDefault()` + `stopImmediatePropagation()` to suppress any element's own handlers
    - Records `{ selector, xPercent, yPercent, rectLeft, rectTop, rectWidth, rectHeight, viewportWidth, viewportHeight, pageUrl, pageTitle, formState, userAgent }`
    - Exits targeting mode, waits two `requestAnimationFrame` ticks for the overlay to repaint away
-   - Calls `html2canvas` on `document.documentElement` (visible viewport only); skips gracefully if offline
+   - Calls `html2canvas` on `document.documentElement` (visible viewport only); bundled locally so always available
    - Opens the feedback modal
-4. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `tuftSettings` and submitted automatically without prompting.
-5. Modal submit → `fetch( tuftSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
-6. On success: shows a thank-you message, auto-closes after 2.5 s
+4. Modal opens with an annotated screenshot preview (`DF.annotatePreview()`): draws the screenshot onto a canvas with a spotlight cutout, optional dashed bounding-box rect, and crosshair/ring marker at the click point — matching the SVG produced server-side by `Tuft_SVG_Annotation`. The annotated JPEG replaces the plain thumbnail src.
+5. Modal shows a feedback textarea. Name/email fields are visible for guests; for logged-in users they are hidden — the values are pre-populated from `tuftSettings` and submitted automatically without prompting.
+6. Modal submit → `fetch( tuftSettings.restUrl + '/submit', { method: 'POST', … } )` with `X-WP-Nonce` header
+7. On success: shows a thank-you message, auto-closes after 2.5 s
 
 ### Key implementation details
 
-- The overlay has `pointer-events: none` so mouse events reach real page elements. The crosshair cursor is applied via `body.df-targeting * { cursor: crosshair !important }`.
+- The overlay has `pointer-events: none` so mouse events reach real page elements. The crosshair cursor is applied via `body.tuft-targeting * { cursor: crosshair !important }`.
 - `stopImmediatePropagation()` in the capture-phase click listener prevents any subsequently-registered handler (including Atarim's click interceptor if both plugins are active) from seeing the click.
-- `html2canvas` is loaded from `unpkg.com` at `wp_enqueue_scripts`. If the CDN is unreachable the screenshot field is simply omitted.
+- `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — no CDN dependency. The `postinstall` npm hook keeps it in sync with the version declared in `package.json`.
 - Form state capture skips `type=password`, `type=hidden`, `type=submit`, and `type=button` fields.
 - `getSelector()` walks up the DOM up to 5 levels, preferring `#id` anchors and appending `:nth-of-type()` when siblings share the same tag.
+- `ignoreElements` in the `html2canvas` call skips any element whose `id` starts with `tuft-`, preventing the plugin's own UI from appearing in screenshots.
 
 ---
 
@@ -126,23 +140,24 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 ---
 
-## Alpaca Issue Tracker integration (`TUFT_Alpaca_Bridge`)
+## Alpaca Issue Tracker integration (`Tuft_Alpaca_Bridge`)
 
 The bridge is always loaded. It is a no-op when Alpaca is not active (`post_type_exists('alpaca_issue')` returns false).
 
 When Alpaca is active, on every `tuft_feedback_submitted` action:
 
-1. Creates an `alpaca_issue` whose `post_content` is the feedback text plus a plain-text context block (page, element, coordinates, viewport, submitter).
-2. Reads `alpaistr_get_statuses()` and assigns the lowest-score status (the Alpaca "default" column), respecting the `alpaca_default_status` filter.
-3. Prepends the new issue ID to `issue_order` term meta so it appears at the top of that column.
-4. Stores `alpaca_url`, `alpaca_screenwidth`, `alpaca_screenheight` so Alpaca's own context display works.
-5. Tags the issue with the detected browser (`alpaca_browser` taxonomy) and type `Tuft` (`alpaca_type` taxonomy).
-6. Cross-references: `_tuft_alpaca_issue_id` on the `tuft_feedback` post; `alpaca_tuft_post_id` on the `alpaca_issue` post.
-7. Calls `alpaistr_clear_board_cache()` so the board reflects the new issue immediately.
+1. Creates an `alpaca_issue` whose `post_content` is the feedback text only.
+2. Immediately inserts a context comment (`issuecomment` type) containing: the feedback text in a `<p>`, a metadata `<ul>` (page, element, coordinates, viewport, submitter), and a `<figure>` with the SVG-annotated screenshot (spotlight + bounding box + crosshair marker). The comment is where reviewers see the full context; the issue body stays clean for the Kanban card title.
+3. Reads `alpaistr_get_statuses()` and assigns the lowest-score status (the Alpaca "default" column), respecting the `alpaca_default_status` filter.
+4. Prepends the new issue ID to `issue_order` term meta so it appears at the top of that column.
+5. Stores `alpaca_url`, `alpaca_screenwidth`, `alpaca_screenheight` so Alpaca's own context display works.
+6. Tags the issue with the detected browser (`alpaca_browser` taxonomy) and type `Tuft` (`alpaca_type` taxonomy).
+7. Cross-references: `_tuft_alpaca_issue_id` on the `tuft_feedback` post; `alpaca_tuft_post_id` on the `alpaca_issue` post.
+8. Calls `alpaistr_clear_board_cache()` so the board reflects the new issue immediately.
 
 ### Admin menu behaviour
 
-When Alpaca is active, `TUFT_Post_Type::adjust_menu()` (hooked to `admin_menu` at priority 20):
+When Alpaca is active, `Tuft_Post_Type::adjust_menu()` (hooked to `admin_menu` at priority 20):
 - Removes the standalone "Tuft" top-level menu entry.
 - Adds "Tuft" as a submenu under Alpaca's **Project Board** (`project-board`).
 
@@ -150,7 +165,7 @@ The standard CPT list table and post-edit screen (the expanded detail view with 
 
 ### Install-Alpaca notice
 
-`TUFT_Post_Type::maybe_suggest_alpaca()` (hooked to `admin_notices`) shows a dismissible info notice on the Tuft list screen (`edit-tuft_feedback`) when Alpaca is **not** installed. The notice links to the Alpaca plugin-install page in wp-admin and is silently skipped when Alpaca is already active.
+`Tuft_Post_Type::maybe_suggest_alpaca()` (hooked to `admin_notices`) shows a dismissible info notice on the Tuft list screen (`edit-tuft_feedback`) when Alpaca is **not** installed. The notice links to the Alpaca plugin-install page in wp-admin and is silently skipped when Alpaca is already active.
 
 ---
 
@@ -174,5 +189,6 @@ Use this hook to integrate with other systems without modifying the REST control
 - The `/submit` endpoint uses `permission_callback => '__return_true'` intentionally — this plugin is for local/staging use. Add `current_user_can()` checks before deploying to production.
 - The Alpaca bridge must never hard-depend on Alpaca functions: always guard with `function_exists()` or `post_type_exists()` before calling.
 - Do not modify `alpaca-issue-tracker` files; interact with it only through its public functions, filters, and the `alpaca_default_status` / `alpaca_user_can` filter hooks.
-- `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — do not reintroduce a CDN dependency. To upgrade: bump the version in `package.json` and run `npm install` (the `postinstall` hook copies the new file). Test that the `ignoreElements` option (used to exclude the plugin's own UI from screenshots) still works after any upgrade.
-- PHP class files must be named after the class with `class-` prepended and underscores converted to dashes, prefixed with `df-`: e.g. `TUFT_Post_Type` → `class-tuft-post-type.php`.
+- `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — do not reintroduce a CDN dependency. To upgrade: bump the version in `package.json` and run `npm install` (the `postinstall` hook copies the new file). Test that the `ignoreElements` option (used to exclude elements whose `id` starts with `tuft-` from screenshots) still works after any upgrade.
+- The FAB button face is `assets/img/fab-button.png` from the Tuft brand kit. Do not replace it with an inline SVG — the PNG preserves the rounded rendering of the mark. Its URL is passed to JS via `tuftSettings.buttonImg`.
+- PHP class files must be named after the class with `class-` prepended and underscores converted to dashes, prefixed with `tuft-`: e.g. `Tuft_Post_Type` → `class-tuft-post-type.php`.

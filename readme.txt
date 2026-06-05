@@ -41,7 +41,7 @@ When [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/)
 
 1. Upload the `tuft` folder to `wp-content/plugins/`.
 2. Activate **Tuft** through the **Plugins** menu in WordPress.
-3. Visit any frontend page — the **Feedback** button appears fixed to the right edge of the screen.
+3. Visit any frontend page — the Tuft FAB button appears ~2/3 down the right edge of the screen.
 4. Optionally install and activate **Alpaca Issue Tracker** for Kanban board triage.
 
 No settings page is required. The plugin works immediately on activation.
@@ -82,11 +82,11 @@ With the default configuration, no — the submission endpoint is open to unauth
 
 = Does it work with page builders and custom themes? =
 
-Yes. The plugin injects its UI via `wp_enqueue_scripts` and appends its elements directly to `document.body`, so it works alongside any theme or page builder. The element selector logic ignores elements with `df-` prefixed IDs to prevent accidentally annotating the plugin's own UI.
+Yes. The plugin injects its UI via `wp_enqueue_scripts` and appends its elements directly to `document.body`, so it works alongside any theme or page builder. The element selector logic ignores elements with `tuft-` prefixed IDs to prevent accidentally annotating the plugin's own UI.
 
 == Screenshots ==
 
-1. The floating Feedback button fixed to the right edge of a frontend page.
+1. The Tuft FAB button (~2/3 down the right edge of a frontend page).
 2. Targeting mode — page dims, crosshair cursor, hovered element highlighted.
 3. The feedback modal after selecting an element, showing the screenshot thumbnail and form.
 4. The Tuft admin list table with screenshot thumbnails.
