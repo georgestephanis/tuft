@@ -348,6 +348,7 @@
 
 			const target = e.target;
 			const selector = getSelector( target );
+			const boundingRect = target.getBoundingClientRect();
 
 			this.captured = {
 				selector,
@@ -357,6 +358,22 @@
 				yPercent: ( ( e.clientY / window.innerHeight ) * 100 ).toFixed(
 					1
 				),
+				rectLeft: (
+					( boundingRect.left / window.innerWidth ) *
+					100
+				).toFixed( 2 ),
+				rectTop: (
+					( boundingRect.top / window.innerHeight ) *
+					100
+				).toFixed( 2 ),
+				rectWidth: (
+					( boundingRect.width / window.innerWidth ) *
+					100
+				).toFixed( 2 ),
+				rectHeight: (
+					( boundingRect.height / window.innerHeight ) *
+					100
+				).toFixed( 2 ),
 				viewportWidth: window.innerWidth,
 				viewportHeight: window.innerHeight,
 				pageUrl: settings.pageUrl,
@@ -479,6 +496,10 @@
 				selector: data.selector || '',
 				xPercent: data.xPercent || '',
 				yPercent: data.yPercent || '',
+				rectLeft: data.rectLeft ?? null,
+				rectTop: data.rectTop ?? null,
+				rectWidth: data.rectWidth ?? null,
+				rectHeight: data.rectHeight ?? null,
 				viewportWidth: data.viewportWidth || window.innerWidth,
 				viewportHeight: data.viewportHeight || window.innerHeight,
 				formState: data.formState || null,

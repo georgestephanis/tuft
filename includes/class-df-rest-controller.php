@@ -82,19 +82,23 @@ class DF_REST_Controller extends WP_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function submit( WP_REST_Request $request ) {
-		$feedback   = $request->get_param( 'feedback' );
-		$page_url   = $request->get_param( 'pageUrl' ) ?? '';
-		$page_title = $request->get_param( 'pageTitle' ) ?? '';
-		$selector   = $request->get_param( 'selector' ) ?? '';
-		$x_percent  = isset( $request['xPercent'] ) ? (float) $request['xPercent'] : '';
-		$y_percent  = isset( $request['yPercent'] ) ? (float) $request['yPercent'] : '';
-		$viewport_w = isset( $request['viewportWidth'] ) ? absint( $request['viewportWidth'] ) : 0;
-		$viewport_h = isset( $request['viewportHeight'] ) ? absint( $request['viewportHeight'] ) : 0;
-		$user_agent = sanitize_text_field( $request['userAgent'] ?? '' );
-		$name       = $request->get_param( 'name' ) ?? '';
-		$email      = $request->get_param( 'email' ) ?? '';
-		$form_state = $request['formState'] ?? null;
-		$screenshot = $request['screenshot'] ?? '';
+		$feedback    = $request->get_param( 'feedback' );
+		$page_url    = $request->get_param( 'pageUrl' ) ?? '';
+		$page_title  = $request->get_param( 'pageTitle' ) ?? '';
+		$selector    = $request->get_param( 'selector' ) ?? '';
+		$x_percent   = isset( $request['xPercent'] ) ? (float) $request['xPercent'] : '';
+		$y_percent   = isset( $request['yPercent'] ) ? (float) $request['yPercent'] : '';
+		$rect_left   = isset( $request['rectLeft'] ) ? (float) $request['rectLeft'] : null;
+		$rect_top    = isset( $request['rectTop'] ) ? (float) $request['rectTop'] : null;
+		$rect_width  = isset( $request['rectWidth'] ) ? (float) $request['rectWidth'] : null;
+		$rect_height = isset( $request['rectHeight'] ) ? (float) $request['rectHeight'] : null;
+		$viewport_w  = isset( $request['viewportWidth'] ) ? absint( $request['viewportWidth'] ) : 0;
+		$viewport_h  = isset( $request['viewportHeight'] ) ? absint( $request['viewportHeight'] ) : 0;
+		$user_agent  = sanitize_text_field( $request['userAgent'] ?? '' );
+		$name        = $request->get_param( 'name' ) ?? '';
+		$email       = $request->get_param( 'email' ) ?? '';
+		$form_state  = $request['formState'] ?? null;
+		$screenshot  = $request['screenshot'] ?? '';
 
 		// Fill in logged-in user info if not provided.
 		if ( is_user_logged_in() ) {
@@ -147,6 +151,21 @@ class DF_REST_Controller extends WP_REST_Controller {
 
 		if ( $form_state ) {
 			update_post_meta( $post_id, '_df_form_state', wp_json_encode( $form_state ) );
+		}
+
+		if ( null !== $rect_left && null !== $rect_top && null !== $rect_width && null !== $rect_height ) {
+			update_post_meta(
+				$post_id,
+				'_df_rect',
+				wp_json_encode(
+					array(
+						'left'   => $rect_left,
+						'top'    => $rect_top,
+						'width'  => $rect_width,
+						'height' => $rect_height,
+					)
+				)
+			);
 		}
 
 		if ( $screenshot ) {

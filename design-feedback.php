@@ -22,6 +22,7 @@ define( 'DF_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DF_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'DF_VERSION', '1.0.0' );
 
+require_once DF_PLUGIN_DIR . 'includes/class-df-svg-annotation.php';
 require_once DF_PLUGIN_DIR . 'includes/class-df-post-type.php';
 require_once DF_PLUGIN_DIR . 'includes/class-df-rest-controller.php';
 require_once DF_PLUGIN_DIR . 'includes/class-df-alpaca-bridge.php';
