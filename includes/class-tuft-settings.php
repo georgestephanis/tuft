@@ -147,6 +147,10 @@ class Tuft_Settings {
 		$value  = $this->get_visibility();
 		$counts = $this->get_role_counts();
 
+		$allowed_label_html = array(
+			'span' => array( 'class' => array() ),
+		);
+
 		$options = array(
 			'everyone'  => __( 'Everyone (logged in and logged out)', 'tuft-feedback' ),
 			'logged_in' => __( 'Logged-in users only', 'tuft-feedback' ),
@@ -168,12 +172,7 @@ class Tuft_Settings {
 					value="<?php echo esc_attr( $option_value ); ?>"
 					<?php checked( $value, $option_value ); ?>
 				/>
-				<?php
-				// Label contains an intentional <span class="description"> for the counts —
-				// it is built from translated strings and escaped integers only.
-				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-				echo $label;
-				?>
+				<?php echo wp_kses( $label, $allowed_label_html ); ?>
 			</label>
 			<?php endforeach; ?>
 		</fieldset>
