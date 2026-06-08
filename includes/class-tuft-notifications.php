@@ -81,16 +81,16 @@ class Tuft_Notifications {
 		);
 
 		return array(
-			'text'           => $text,
-			'id'             => $post_id,
-			'feedback'       => $feedback,
-			'page_url'       => $page_url,
-			'page_title'     => $page_title,
-			'selector'       => $selector,
-			'submitter_name' => $name,
-			'submitter_email'=> $email,
-			'admin_url'      => $admin_url,
-			'submitted_at'   => get_post_datetime( $post, 'date', 'gmt' )->format( DATE_ATOM ),
+			'text'            => $text,
+			'id'              => $post_id,
+			'feedback'        => $feedback,
+			'page_url'        => $page_url,
+			'page_title'      => $page_title,
+			'selector'        => $selector,
+			'submitter_name'  => $name,
+			'submitter_email' => $email,
+			'admin_url'       => $admin_url,
+			'submitted_at'    => get_post_datetime( $post, 'date', 'gmt' )->format( DATE_ATOM ),
 		);
 	}
 

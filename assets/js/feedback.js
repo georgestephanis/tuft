@@ -159,9 +159,9 @@
 		// Drawing state — reset each time the modal opens.
 		drawing: {
 			active: false,
-			tool: 'pen',       // 'pen' | 'rect'
-			strokes: [],       // committed strokes
-			penPoints: [],     // points for the stroke currently being drawn
+			tool: 'pen', // 'pen' | 'rect'
+			strokes: [], // committed strokes
+			penPoints: [], // points for the stroke currently being drawn
 			baseSnapshot: null, // ImageData after spotlight annotation, before user marks
 			startX: 0,
 			startY: 0,
@@ -350,7 +350,9 @@
 				.querySelector( '#tuft-draw-clear' )
 				.addEventListener( 'click', this.clearDrawing.bind( this ) );
 
-			this.drawCanvas = backdrop.querySelector( '#tuft-screenshot-canvas' );
+			this.drawCanvas = backdrop.querySelector(
+				'#tuft-screenshot-canvas'
+			);
 			this.modal = backdrop;
 			return backdrop;
 		},
@@ -491,13 +493,13 @@
 			submitBtn.textContent = 'Submit Feedback';
 
 			// Reset drawing tool buttons to pen.
-			this.backdrop.querySelectorAll( '.tuft-draw-tool' ).forEach(
-				function ( b ) {
+			this.backdrop
+				.querySelectorAll( '.tuft-draw-tool' )
+				.forEach( function ( b ) {
 					const isPen = b.dataset.tool === 'pen';
 					b.classList.toggle( 'tuft-draw-active', isPen );
 					b.setAttribute( 'aria-pressed', isPen ? 'true' : 'false' );
-				}
-			);
+				} );
 			this.drawing.tool = 'pen';
 
 			// Screenshot canvas — set up asynchronously once the screenshot image loads.
@@ -567,7 +569,9 @@
 				// aspect ratio. The canvas's offsetWidth is reliable here because
 				// openModal() has already added the 'visible' class (display:block).
 				const w = canvas.offsetWidth || 440;
-				const h = Math.round( ( img.naturalHeight / img.naturalWidth ) * w );
+				const h = Math.round(
+					( img.naturalHeight / img.naturalWidth ) * w
+				);
 				canvas.width = w;
 				canvas.height = h;
 
@@ -595,7 +599,12 @@
 					const rt = parseFloat( data.rectTop );
 					const rw = parseFloat( data.rectWidth );
 					const rh = parseFloat( data.rectHeight );
-					if ( ! isNaN( rl ) && ! isNaN( rt ) && ! isNaN( rw ) && ! isNaN( rh ) ) {
+					if (
+						! isNaN( rl ) &&
+						! isNaN( rt ) &&
+						! isNaN( rw ) &&
+						! isNaN( rh )
+					) {
 						const rx = ( rl / 100 ) * w;
 						const ry = ( rt / 100 ) * h;
 						const rW = ( rw / 100 ) * w;
@@ -761,7 +770,10 @@
 			this.drawing.active = false;
 			const pos = this.getDrawXY( e );
 
-			if ( this.drawing.tool === 'pen' && this.drawing.penPoints.length > 1 ) {
+			if (
+				this.drawing.tool === 'pen' &&
+				this.drawing.penPoints.length > 1
+			) {
 				this.drawing.strokes.push( {
 					type: 'pen',
 					points: this.drawing.penPoints.slice(),
@@ -864,7 +876,10 @@
 			// was never initialised (e.g. html2canvas unavailable).
 			let screenshotData = data.screenshot || null;
 			if ( this.drawing.baseSnapshot && this.drawCanvas ) {
-				screenshotData = this.drawCanvas.toDataURL( 'image/jpeg', 0.85 );
+				screenshotData = this.drawCanvas.toDataURL(
+					'image/jpeg',
+					0.85
+				);
 			}
 
 			const payload = {

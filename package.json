@@ -9,6 +9,10 @@
     "lint:js": "wp-scripts lint-js assets/js",
     "lint:css": "wp-scripts lint-style assets/css",
     "lint": "npm run lint:js && npm run lint:css",
+    "format:js": "wp-scripts format assets/js",
+    "format:css": "wp-scripts lint-style --fix assets/css",
+    "format:php": "vendor/bin/phpcbf",
+    "format": "npm run format:js && npm run format:css && npm run format:php",
     "plugin-zip": "wp-scripts plugin-zip"
   },
   "files": [

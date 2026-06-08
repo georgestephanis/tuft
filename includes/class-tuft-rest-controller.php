@@ -38,7 +38,7 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 			array(
 				'methods'             => WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'submit' ),
-				'permission_callback' => '__return_true',
+				'permission_callback' => array( $this, 'check_submit_permission' ),
 				'args'                => array(
 					'feedback'  => array(
 						'required'          => true,
@@ -73,6 +73,46 @@ class Tuft_REST_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Check whether the current request is allowed to submit feedback,
+	 * mirroring the widget visibility setting.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function check_submit_permission() {
+		$visibility = Tuft_Settings::get_visibility();
+
+		if ( 'everyone' === $visibility ) {
+			return true;
+		}
+
+		if ( ! is_user_logged_in() ) {
+			return new WP_Error(
+				'tuft_rest_forbidden',
+				__( 'You must be logged in to submit feedback.', 'tuft-feedback' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		if ( 'editors' === $visibility && ! current_user_can( 'edit_others_posts' ) ) {
+			return new WP_Error(
+				'tuft_rest_forbidden',
+				__( 'You do not have permission to submit feedback.', 'tuft-feedback' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		if ( 'admins' === $visibility && ! current_user_can( 'manage_options' ) ) {
+			return new WP_Error(
+				'tuft_rest_forbidden',
+				__( 'You do not have permission to submit feedback.', 'tuft-feedback' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		return true;
 	}
 
 	/**
