@@ -22,9 +22,28 @@ class Tuft_Post_Type {
 		add_action( 'admin_menu', array( $this, 'adjust_menu' ), 20 );
 		add_action( 'admin_notices', array( $this, 'maybe_suggest_alpaca' ) );
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_box' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_styles' ) );
 		add_filter( 'manage_tuft_feedback_posts_columns', array( $this, 'columns' ) );
 		add_action( 'manage_tuft_feedback_posts_custom_column', array( $this, 'render_column' ), 10, 2 );
 		add_filter( 'manage_edit-tuft_feedback_sortable_columns', array( $this, 'sortable_columns' ) );
+	}
+
+	/**
+	 * Enqueue admin stylesheet on tuft_feedback screens.
+	 *
+	 * @param string $_hook_suffix Current admin page hook.
+	 */
+	public function enqueue_admin_styles( $_hook_suffix ) {
+		$screen = get_current_screen();
+		if ( ! $screen || 'tuft_feedback' !== $screen->post_type ) {
+			return;
+		}
+		wp_enqueue_style(
+			'tuft-feedback-admin',
+			TUFT_PLUGIN_URL . 'assets/css/admin.css',
+			array(),
+			TUFT_VERSION
+		);
 	}
 
 	/**
@@ -229,12 +248,6 @@ class Tuft_Post_Type {
 		$rect_raw   = get_post_meta( $post->ID, '_tuft_rect', true );
 		$rect       = $rect_raw ? json_decode( $rect_raw, true ) : null;
 		?>
-		<style>
-			.df-meta-table th { width: 140px; font-weight: 600; vertical-align: top; padding: 6px 10px 6px 0; }
-			.df-meta-table td { vertical-align: top; padding: 6px 0; }
-			.df-feedback-text { background: #f9f9f9; border-left: 3px solid #0073aa; padding: 10px 14px; margin-bottom: 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
-		</style>
-
 		<?php if ( $text ) : ?>
 			<div class="df-feedback-text"><?php echo esc_html( $text ); ?></div>
 		<?php endif; ?>
@@ -307,7 +320,7 @@ class Tuft_Post_Type {
 			<?php if ( $form_state ) : ?>
 			<tr>
 				<th><?php esc_html_e( 'Form State', 'tuft-feedback' ); ?></th>
-				<td><pre style="margin:0;font-size:11px;white-space:pre-wrap;background:#f9f9f9;padding:8px;"><?php echo esc_html( $form_state ); ?></pre></td>
+				<td><pre class="df-form-state"><?php echo esc_html( $form_state ); ?></pre></td>
 			</tr>
 			<?php endif; ?>
 		</table>
