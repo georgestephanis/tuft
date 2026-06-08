@@ -4,7 +4,7 @@ Guidance for AI agents and contributors working in this plugin.
 
 ## Scope
 
-**Edit only:** `wp-content/plugins/tuft/` and all files beneath it.
+**Edit only:** `wp-content/plugins/tuft-feedback/` and all files beneath it.
 
 **Read-only reference:** `wp-content/plugins/alpaca-issue-tracker/` — understand it to know what the bridge integrates with, but never modify it.
 
@@ -28,20 +28,21 @@ If the **Alpaca Issue Tracker** plugin is also active, each submission is automa
 
 | File | Purpose |
 |------|---------|
-| `tuft.php` | Plugin bootstrap: constants, visibility-gated enqueue of frontend CSS/JS, passes `tuftSettings` to JS |
+| `tuft-feedback.php` | Plugin bootstrap: constants, visibility-gated enqueue of frontend CSS/JS, passes `tuftSettings` to JS |
 | `includes/class-tuft-post-type.php` | `tuft_feedback` CPT, admin list-table columns, meta box detail view, Alpaca-aware menu placement, install-Alpaca notice |
 | `includes/class-tuft-settings.php` | **Settings → Tuft Feedback** page: `tuft_visibility`, `tuft_rate_limit`, `tuft_notify_email`, `tuft_webhook_urls` options |
-| `includes/class-tuft-rest-controller.php` | `POST /tuft/v1/submit` — rate-limit check, CPT post + meta + screenshot attachment, fires `tuft_feedback_submitted` |
+| `includes/class-tuft-rest-controller.php` | `POST /tuft/v1/submit` — permission check, rate-limit check, CPT post + meta + screenshot attachment, fires `tuft_feedback_submitted` |
 | `includes/class-tuft-notifications.php` | Listens to `tuft_feedback_submitted`; sends email and webhook notifications |
 | `includes/class-tuft-alpaca-bridge.php` | Listens to `tuft_feedback_submitted`; creates an `alpaca_issue` mirror when Alpaca is active |
 | `assets/css/feedback.css` | All frontend UI styles: floating button, targeting overlay, element highlight, modal, drawing toolbar |
+| `assets/css/admin.css` | Admin-only styles: meta box detail view (feedback text block, meta table, form state pre) |
 | `assets/js/feedback.js` | All frontend interaction: targeting mode, element capture, screenshot, canvas annotation, modal, REST submission |
 
 ### Tooling
 
 | File | Purpose |
 |------|---------|
-| `package.json` | `@wordpress/scripts` + `html2canvas` dev dependencies; `lint:js`, `lint:css`, `lint`, `copy-vendor`, and `postinstall` scripts |
+| `package.json` | `@wordpress/scripts` + `html2canvas` dev dependencies; `lint:js`, `lint:css`, `lint`, `format:js`, `format:css`, `format:php`, `format`, `copy-vendor`, and `postinstall` scripts |
 | `composer.json` | `squizlabs/php_codesniffer`, `wp-coding-standards/wpcs`, installer; `phpcs`/`phpcbf` scripts |
 | `phpcs.xml` | WordPress-Extra + WordPress-Docs ruleset, `tuft`/`Tuft` prefix, `tuft` text domain |
 | `.eslintrc.json` | Extends `@wordpress/eslint-plugin/recommended`; declares `tuftSettings`/`html2canvas` globals |
@@ -106,7 +107,7 @@ Registered under **Settings → Tuft Feedback** (`options-general.php?page=tuft-
 | `tuft_notify_email` | string | `''` | Comma-separated email addresses for submission notifications |
 | `tuft_webhook_urls` | string | `''` | Newline-separated webhook URLs; a JSON payload is POSTed to each on submission |
 
-`Tuft_Settings::get_visibility()` is a `public static` method used by `tuft.php` during enqueue.
+`Tuft_Settings::get_visibility()` is a `public static` method used by `tuft-feedback.php` during enqueue.
 
 `sanitize_visibility()` falls back to `'logged_in'` for unknown values. `sanitize_webhook_urls()` runs each line through `esc_url_raw()` and drops blank or invalid entries. `sanitize_email_list()` runs each comma-delimited part through `sanitize_email()` and drops invalid addresses.
 
@@ -118,7 +119,7 @@ Registered under **Settings → Tuft Feedback** (`options-general.php?page=tuft-
 
 | Route | Method | Auth | Description |
 |-------|--------|------|-------------|
-| `/submit` | POST | `__return_true` (public) | Create a feedback entry |
+| `/submit` | POST | mirrors `tuft_visibility` setting | Create a feedback entry |
 
 ### `/submit` payload
 
@@ -142,7 +143,7 @@ Registered under **Settings → Tuft Feedback** (`options-general.php?page=tuft-
 | `email` | string | No | Submitter email — same behaviour as `name` |
 | `screenshot` | string | No | Base64 JPEG data URL (includes spotlight annotation and any canvas drawings); saved as a media attachment |
 
-**Responses:** `{ "success": true, "id": <post_id> }` on 201; `{ "success": false, "message": "…" }` with status 429 when the rate limit is exceeded; WP error on 5xx.
+**Responses:** `{ "success": true, "id": <post_id> }` on 201; `{ "success": false, "message": "…" }` with status 429 when the rate limit is exceeded; `WP_Error` with status 401/403 when the visibility setting blocks the request; WP error on 5xx.
 
 ---
 
@@ -255,9 +256,9 @@ Use this hook to integrate with other systems without modifying the REST control
 - Keep changes scoped to the stated task.
 - Follow WordPress coding standards: escape output (`esc_html`, `esc_attr`, `esc_url`, `wp_json_encode`), sanitize input, use `$wpdb->prepare()` for any raw SQL.
 - **Run linters before declaring any PHP/JS/CSS change done:**
-  - PHP: `composer phpcs` (auto-fix with `composer phpcbf`)
-  - JS + CSS: `npm run lint` (or individually `npm run lint:js` / `npm run lint:css`)
-- The `/submit` endpoint uses `permission_callback => '__return_true'` intentionally — visibility gating happens at the enqueue level in `tuft.php`. Add `current_user_can()` checks to the REST controller only if the endpoint itself needs to be locked down.
+  - PHP: `composer phpcs` (auto-fix with `composer phpcbf` or `npm run format:php`)
+  - JS + CSS: `npm run lint` (auto-fix with `npm run format`)
+- The `/submit` endpoint's `check_submit_permission()` method mirrors the `tuft_visibility` setting — the same four-level hierarchy (everyone / logged_in / editors / admins) enforced by the frontend enqueue guard in `tuft-feedback.php`. If you change the visibility option set, update both places.
 - The Alpaca bridge must never hard-depend on Alpaca functions: always guard with `function_exists()` or `post_type_exists()` before calling.
 - Do not modify `alpaca-issue-tracker` files; interact with it only through its public functions, filters, and the `alpaca_default_status` / `alpaca_user_can` filter hooks.
 - `html2canvas` is bundled locally at `assets/js/vendor/html2canvas.min.js` — do not reintroduce a CDN dependency. To upgrade: bump the version in `package.json` and run `npm install` (the `postinstall` hook copies the new file). Test that the `ignoreElements` option (used to exclude elements whose `id` starts with `tuft-` from screenshots) still works after any upgrade.

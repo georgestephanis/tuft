@@ -3,7 +3,7 @@ Contributors: georgestephanis
 Tags: feedback, design, visual feedback, client review, annotations
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -43,7 +43,7 @@ When [Alpaca Issue Tracker](https://wordpress.org/plugins/alpaca-issue-tracker/)
 
 == Installation ==
 
-1. Upload the `tuft` folder to `wp-content/plugins/`.
+1. Upload the `tuft-feedback` folder to `wp-content/plugins/`.
 2. Activate **Tuft** through the **Plugins** menu in WordPress.
 3. Visit any frontend page — the Tuft FAB button appears ~2/3 down the right edge of the screen.
 4. Configure who sees the button, rate limiting, and notification emails/webhooks under **Settings → Tuft Feedback**.
@@ -89,11 +89,7 @@ For fully custom integrations, hook into the `tuft_feedback_submitted` action:
 
 = Is this safe for production? =
 
-The visibility setting restricts who sees the feedback button on the frontend. The submission endpoint itself remains open by default. Before deploying to a public site, either use the visibility setting to limit submissions to logged-in users, or add a capability check to the `permission_callback` in `includes/class-tuft-rest-controller.php`:
-
-`'permission_callback' => function() {
-    return current_user_can( 'read' );
-},`
+The widget visibility setting controls both the frontend button **and** the REST submission endpoint — they are kept in sync automatically. Setting visibility to **Logged-in users only**, **Editors and above**, or **Administrators only** will block unauthenticated API submissions with a 401/403 before any data is written. No additional configuration is required.
 
 = Does it work with page builders and custom themes? =
 
@@ -109,6 +105,12 @@ Yes. The plugin injects its UI via `wp_enqueue_scripts` and appends its elements
 6. The Settings → Tuft Feedback page with visibility controls, rate limiting, and notification options.
 
 == Changelog ==
+
+= 1.2.0 =
+* **REST API permission enforcement** — the `/tuft/v1/submit` endpoint now mirrors the widget visibility setting; requests from users who don't meet the configured access level are rejected with a proper 401/403 before any data is written.
+* **Admin stylesheet** — meta box styles extracted from inline `<style>` output to `assets/css/admin.css`, enqueued only on `tuft_feedback` screens. Resolves a plugin directory guideline violation.
+* **Formatting toolchain** — added `npm run format` (and `format:js`, `format:css`, `format:php`) backed by `wp-scripts format`, stylelint `--fix`, and `phpcbf`.
+* Settings page: visibility field labels now pass through `wp_kses` with an explicit allowlist instead of unescaped output.
 
 = 1.1.0 =
 * **Freehand canvas annotation** — a drawing toolbar (pen, rectangle, undo, clear) is shown below the screenshot preview in the feedback modal. Strokes are baked into the submitted JPEG; no server-side overlay is applied.
@@ -131,6 +133,9 @@ Yes. The plugin injects its UI via `wp_enqueue_scripts` and appends its elements
 * Alpaca Issue Tracker integration: auto-creates mirrored `alpaca_issue` with context comment (including annotated screenshot), moves admin menu under Project Board.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Security hardening: the REST submission endpoint now enforces the widget visibility setting. No database changes; existing submissions are unaffected.
 
 = 1.1.0 =
 Adds canvas drawing, visibility controls, rate limiting, and built-in email/webhook notifications. No database changes; existing submissions are unaffected.

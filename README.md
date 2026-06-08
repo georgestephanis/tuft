@@ -141,7 +141,7 @@ Removing Alpaca does not affect stored `tuft_feedback` posts. The cross-referenc
 
 ### `POST /submit`
 
-Open to all visitors (no authentication required). The widget visibility setting controls whether the frontend assets are enqueued at all — the endpoint itself remains open for direct API use.
+Permission mirrors the **Widget visibility** setting. `everyone` → open to all; `logged_in` → must be authenticated; `editors` → requires `edit_others_posts`; `admins` → requires `manage_options`. Unauthenticated requests that don't meet the threshold receive a 401/403 before any data is written.
 
 **Body (JSON):**
 
@@ -174,6 +174,7 @@ Open to all visitors (no authentication required). The widget visibility setting
 | Status | Meaning |
 |--------|---------|
 | 201 | `{ "success": true, "id": 42 }` |
+| 401/403 | Visibility setting blocks the request |
 | 429 | Rate limit exceeded: `{ "success": false, "message": "Too many submissions…" }` |
 | 500 | Server error |
 
@@ -205,7 +206,7 @@ add_action( 'tuft_feedback_submitted', function ( int $post_id ) {
 
 ## Installation
 
-1. Place the plugin in `wp-content/plugins/tuft/`.
+1. Place the plugin in `wp-content/plugins/tuft-feedback/`.
 2. Activate **Tuft**.
 3. Visit any frontend page — the Tuft FAB button appears ~2/3 down the right edge of the screen.
 4. Configure visibility, rate limiting, and notifications under **Settings → Tuft Feedback**.
@@ -233,14 +234,7 @@ The Tuft brand kit lives in two places within the plugin:
 
 ## Security notes
 
-The `/submit` REST endpoint uses `__return_true` as its permission callback, making it open to unauthenticated requests. For typical client-review workflows this is intentional. The widget visibility setting under **Settings → Tuft Feedback** controls who sees the feedback button on the frontend, which is sufficient for most use cases. To harden the endpoint itself, add a capability check in `includes/class-tuft-rest-controller.php`:
-
-```php
-// Example: restrict to logged-in contributors and above
-'permission_callback' => function() {
-    return current_user_can( 'edit_posts' );
-},
-```
+The `/submit` REST endpoint enforces the same access level as the **Widget visibility** setting via `Tuft_REST_Controller::check_submit_permission()`. Changing the setting under **Settings → Tuft Feedback** restricts both the frontend button and the API simultaneously — no separate configuration is required.
 
 Screenshots are stored as JPEG media attachments. Base64 data is decoded server-side and written to the uploads directory via `file_put_contents`. Validate upload directory permissions in hardened environments.
 
@@ -258,7 +252,7 @@ To resolve this, the demo setup script ([.github/setup.php](.github/setup.php)) 
 
 ## Main files
 
-- [tuft.php](tuft.php) — bootstrap, enqueue guard (visibility check), script enqueues, `tuftSettings` localization
+- [tuft-feedback.php](tuft-feedback.php) — bootstrap, enqueue guard (visibility check), script enqueues, `tuftSettings` localization
 - [includes/class-tuft-post-type.php](includes/class-tuft-post-type.php) — CPT registration, admin columns, detail meta box, Alpaca menu placement, install-Alpaca notice
 - [includes/class-tuft-settings.php](includes/class-tuft-settings.php) — **Settings → Tuft Feedback** page: visibility, rate limit, email addresses, webhook URLs
 - [includes/class-tuft-rest-controller.php](includes/class-tuft-rest-controller.php) — `POST /submit` endpoint, rate limiting, screenshot attachment saving
@@ -281,6 +275,8 @@ npm run lint        # JS + CSS via @wordpress/scripts
 composer phpcs      # PHP via WPCS
 
 # Auto-fix what can be fixed
-composer phpcbf     # PHP
-npm run lint:js -- --fix   # JS (prettier)
+npm run format      # JS + CSS + PHP in one pass
+npm run format:php  # PHP only (phpcbf)
+npm run format:js   # JS only (wp-scripts format / Prettier)
+npm run format:css  # CSS only (stylelint --fix)
 ```

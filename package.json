@@ -1,6 +1,6 @@
 {
   "name": "tuft-feedback",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Visual design feedback with click-to-annotate and screenshots.",
   "private": true,
   "scripts": {

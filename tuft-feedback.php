@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tuft Feedback
  * Description: Soft on clients. Sharp on the details. Visual feedback with click-to-annotate and screenshots.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: George Stephanis
  * Author URI: https://github.com/georgestephanis
  * License: GPLv2 or later
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'TUFT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'TUFT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'TUFT_VERSION', '1.1.0' );
+define( 'TUFT_VERSION', '1.2.0' );
 
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-post-type.php';
 require_once TUFT_PLUGIN_DIR . 'includes/class-tuft-settings.php';
