@@ -8,7 +8,7 @@ Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Collect visual design feedback directly on the page — visitors click any element, annotate a screenshot, and add a note, all without leaving the browser.
+Collect visual design feedback directly on the page — visitors click any element, annotate a screenshot, and add a note without leaving the browser.
 
 == Description ==
 
