@@ -1,6 +1,6 @@
 # Tuft
 
-![Tuft — Soft on clients. Sharp on the details.](assets/wporg/banner-772x250.png)
+![Tuft — Soft on clients. Sharp on the details.](.wordpress-org/banner-772x250.png)
 
 [![Try in WordPress Playground](https://img.shields.io/badge/Try%20in-WordPress%20Playground-blue?style=for-the-badge&logo=wordpress)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/georgestephanis/tuft/trunk/.github/blueprint.json)
 
@@ -221,12 +221,12 @@ The Tuft brand kit lives in two places within the plugin:
 | Path | Purpose |
 |------|---------|
 | `assets/img/fab-button.png` | FAB button face (coral disc + puff mark, 2× density). Served to the frontend; URL passed to JS via `tuftSettings.buttonImg`. |
-| `assets/wporg/icon-128x128.png` | WordPress.org directory icon (128 px) |
-| `assets/wporg/icon-256x256.png` | WordPress.org directory icon @2× |
-| `assets/wporg/banner-772x250.png` | WordPress.org directory banner |
-| `assets/wporg/banner-1544x500.png` | WordPress.org directory banner @2× |
+| `.wordpress-org/icon-128x128.png` | WordPress.org directory icon (128 px) |
+| `.wordpress-org/icon-256x256.png` | WordPress.org directory icon @2× |
+| `.wordpress-org/banner-772x250.png` | WordPress.org directory banner |
+| `.wordpress-org/banner-1544x500.png` | WordPress.org directory banner @2× |
 
-**WordPress.org deployment:** the `assets/wporg/` files belong in the SVN `assets/` directory *outside* the plugin zip (sibling to `trunk/`). Copy them there before publishing.
+**WordPress.org deployment:** the `.wordpress-org/` files are picked up automatically by the deploy action and placed in the SVN `assets/` directory outside the plugin zip.
 
 **Palette:** Dusty coral `#e08a7e` · Sage `#9fbe9c` · Lilac `#c9b6d9` · Cream `#fbf4ec` · Cocoa `#43352f`. Full CSS custom property tokens are in the brand kit at `tokens/tuft-tokens.css`.
 
