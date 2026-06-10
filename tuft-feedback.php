@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tuft Feedback
  * Description: Soft on clients. Sharp on the details. Visual feedback with click-to-annotate and screenshots.
- * Version: 1.2.0
+ * Version: 1.2.1
  * Author: George Stephanis
  * Author URI: https://github.com/georgestephanis
  * License: GPLv2 or later
