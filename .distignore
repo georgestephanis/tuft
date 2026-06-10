@@ -1,0 +1,17 @@
+/.git
+/.github
+.wordpress-org
+node_modules
+vendor
+.distignore
+.eslintignore
+.eslintrc.json
+.gitignore
+.stylelintrc.json
+AGENTS.md
+README.md
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpcs.xml
