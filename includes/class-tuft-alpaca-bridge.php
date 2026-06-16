@@ -10,8 +10,7 @@
  *   - Issue title   → first ~10 words of the feedback text.
  *   - Issue body    → the feedback text only.
  *   - First comment → feedback text + context metadata (page, element, coordinates, submitter)
- *                     + an SVG screenshot with a spotlight annotation marking
- *                     the exact click location.
+ *                     + the screenshot attached via Alpaca comment metadata.
  *
  * @package Tuft
  */
@@ -135,7 +134,7 @@ class Tuft_Alpaca_Bridge {
 
 	/**
 	 * Insert a context comment on the alpaca_issue containing metadata and
-	 * an SVG screenshot annotated with a spotlight at the click location.
+	 * the annotated screenshot attached via Alpaca comment metadata.
 	 *
 	 * @param int $issue_id    alpaca_issue post ID.
 	 * @param int $df_post_id  tuft_feedback post ID.
@@ -151,8 +150,6 @@ class Tuft_Alpaca_Bridge {
 		$name       = get_post_meta( $df_post_id, '_tuft_submitter_name', true );
 		$email      = get_post_meta( $df_post_id, '_tuft_submitter_email', true );
 		$shot_id    = get_post_meta( $df_post_id, '_tuft_screenshot_id', true );
-		$rect_raw   = get_post_meta( $df_post_id, '_tuft_rect', true );
-		$rect       = $rect_raw ? json_decode( $rect_raw, true ) : null;
 
 		$feedback = get_post_meta( $df_post_id, '_tuft_feedback_text', true );
 
@@ -188,11 +185,13 @@ class Tuft_Alpaca_Bridge {
 			$content .= '<ul><li>' . implode( '</li><li>', $items ) . '</li></ul>';
 		}
 
-		// Append screenshot — annotation is already baked into the JPEG by the client.
+		// Attach screenshot metadata; annotation is already baked into the JPEG by the client.
+		$attachment_urls = array();
+
 		if ( $shot_id ) {
 			$shot_url = wp_get_attachment_url( $shot_id );
 			if ( $shot_url ) {
-				$content .= "\n" . '<img src="' . esc_url( $shot_url ) . '" alt="' . esc_attr__( 'Screenshot', 'tuft-feedback' ) . '" style="max-width:100%;height:auto;display:block;" />';
+				$attachment_urls[] = esc_url_raw( $shot_url );
 			}
 		}
 
@@ -202,17 +201,25 @@ class Tuft_Alpaca_Bridge {
 
 		$user = wp_get_current_user();
 
+		$comment_data = array(
+			'comment_post_ID'      => $issue_id,
+			'comment_author'       => $user->display_name ? $user->display_name : 'Tuft',
+			'comment_author_email' => $user->user_email ? $user->user_email : '',
+			'comment_content'      => $content,
+			'comment_type'         => 'issuecomment',
+			'comment_parent'       => 0,
+			'user_id'              => $user->ID,
+			'comment_approved'     => 1,
+		);
+
+		if ( ! empty( $attachment_urls ) ) {
+			$comment_data['comment_meta'] = array(
+				'alpacaCommentAttachments' => $attachment_urls,
+			);
+		}
+
 		wp_insert_comment(
-			array(
-				'comment_post_ID'      => $issue_id,
-				'comment_author'       => $user->display_name ? $user->display_name : 'Tuft',
-				'comment_author_email' => $user->user_email ? $user->user_email : '',
-				'comment_content'      => $content,
-				'comment_type'         => 'issuecomment',
-				'comment_parent'       => 0,
-				'user_id'              => $user->ID,
-				'comment_approved'     => 1,
-			)
+			$comment_data
 		);
 	}
 
